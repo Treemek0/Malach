@@ -13,6 +13,11 @@ const client = new Client({
 
 console.log("Trying to login as: ", process.env.APP_ID);
 
+const express = require('express');
+const app = express();
+app.get('/', (req, res) => res.send('Malach is online!'));
+app.listen(3000, () => console.log('Server started'));
+
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
