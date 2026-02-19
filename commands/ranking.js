@@ -1,7 +1,6 @@
-const fs = require('node:fs');
-const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
-const exp_module = require('../utils/exp/exp_module');
+const exp_module = require('../utils/exp_module');
+const db = require('../utils/db');
 
 module.exports = {
     name: 'ranking',
@@ -16,29 +15,17 @@ module.exports = {
     ],
 
     async execute(interaction) {
-            const usersPath = path.join(__dirname, '../utils/exp/users/' + interaction.guild.id + '.json');
-            const folderPath = path.dirname(usersPath);
-    
-            if (!fs.existsSync(folderPath)) {
-                fs.mkdirSync(folderPath);
-            }
-    
-            let users = {};
-    
-            if (fs.existsSync(usersPath)) {
-                const data = fs.readFileSync(usersPath, 'utf8');
-                users = JSON.parse(data);
-            }
-    
+            const col = await db.collection('xp');
+            const docs = await col.find({ guildId: interaction.guild.id }).toArray();
             const page = interaction.options.getInteger('page') || 1;
             const usersPerPage = 10;
-            const sortedUsers = Object.entries(users).sort((a, b) => b[1].xp - a[1].xp);
+            const sortedUsers = docs.sort((a, b) => (b.xp || 0) - (a.xp || 0));
             const start = (page - 1) * usersPerPage;
             const end = start + usersPerPage;
 
-            const rankingList = sortedUsers.slice(start, end).map(([userId, userData], index) => {
-                const level = exp_module.get_level(userData.xp);
-                return `**${start + index + 1}.** <@${userId}> - Poziom: **${level}** (XP: **${userData.xp}**)`;
+            const rankingList = sortedUsers.slice(start, end).map((doc, index) => {
+                const level = exp_module.xpToLevel ? exp_module.xpToLevel(doc.xp || 0) : exp_module.get_level({id: doc.userId}, interaction.guild);
+                return `**${start + index + 1}.** <@${doc.userId}> - Poziom: **${level}** (XP: **${Math.round(doc.xp || 0)}**)`;
             }).join('\n');
 
             const rankingEmbed = new EmbedBuilder()

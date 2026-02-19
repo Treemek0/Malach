@@ -1,7 +1,6 @@
-const fs = require('fs');
-const path = require('path');
 const { EmbedBuilder } = require('discord.js');
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
+const db = require('./db');
 
 const streakModule = require('./streak');
 
@@ -45,7 +44,7 @@ module.exports = {
             if (member.id !== user.id) {
                 if(member.mute || member.selfMute || member.deaf) continue;
                 streakModule.addStreak(user, member.user, channel.guild);
-                this.addScore(0.1, user, member.user, channel.guild, 'voice');
+                this.addScore(0.25, user, member.user, channel.guild, 'voice');
             }
         }
     },
@@ -63,166 +62,73 @@ module.exports = {
 
         let baseScore = (friendship1 * 0.7) + (friendship2 * 0.3);
         let scaledScore = Math.sqrt(baseScore);
-        let dynamicMultiplier = 1 + (Math.min(score1to2[2], 80) * 0.69);
-        let dynamicAddition = Math.min(score1to2[2], 40) * 0.30;
+        let dynamicMultiplier = 1 + (Math.min(score1to2[2], 200) * 0.34);
+        let dynamicAddition = Math.min(score1to2[2], 100) * 0.31;
         let finalScore = (scaledScore * dynamicMultiplier) + dynamicAddition;
 
         return Math.min(Math.ceil(finalScore), 100);
     },
 
     async getTopFriendships(user, guild) {
-        const usersPath = path.join(__dirname, './friendships/' + guild.id + '/' + user.id + '.json');
-        if (!fs.existsSync(usersPath)) return [];
+        const col = await db.collection('friendships');
+        const cursor = col.find({ guildId: guild.id, userId: user.id });
+        const entries = await cursor.toArray();
+        const limit = 10;
+        const topByPoints = entries
+            .map(f => ({ id: f.friendId, score: (f.message || 0) + (f.voice || 0) }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit);
 
-        try {
-            const data = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+        const detailedTop = await Promise.all(topByPoints.map(async (f) => {
+            const targetUser = { id: f.id };
+            const friendData = await this.getScore(user, targetUser, guild);
+            const percentage = await this.getFriendshipScore(user, friendData, targetUser, guild);
+            return { id: f.id, percentage, friendData };
+        }));
 
-            const limit = 10;
-            const topByPoints = Object.entries(data)
-                .map(([id, info]) => ({ id, score: info.score }))
-                .sort((a, b) => b.score - a.score)
-                .slice(0, limit);
-
-            const detailedTop = await Promise.all(topByPoints.map(async (f) => {
-                const targetUser = { id: f.id }; 
-                const friendData = await this.getScore(user, targetUser, guild);
-                const percentage = await this.getFriendshipScore(user, friendData, targetUser, guild);
-                return { id: f.id, percentage, friendData };
-            }));
-
-            return detailedTop.sort((a, b) => b.percentage - a.percentage).slice(0, 5);
-        } catch (e) {
-            console.error("Błąd rankingu procentowego:", e);
-            return [];
-        }
+        return detailedTop.sort((a, b) => b.percentage - a.percentage).slice(0, 5);
     },
 
     async addScore(score, user, friend, guild, type = 'message') {
-        const usersPath = path.join(__dirname, './friendships/' + guild.id + '/' + user.id + '.json');
-        const folderPath = path.dirname(usersPath);
-
         if(friend.bot || user.bot || friend.id === user.id) return;
 
-        if (!fs.existsSync(folderPath)) {
-            fs.mkdirSync(folderPath, { recursive: true });
-        }
-
-        let users = {};
-
-        if (fs.existsSync(usersPath)) {
-            const data = fs.readFileSync(usersPath, 'utf8');
-            
-            if (data.trim().length === 0) {
-                users = {};
-            } else {
-                try {
-                    users = JSON.parse(data);
-                } catch (e) {
-                    console.error("Plik JSON jest uszkodzony, resetuję dane.");
-                    users = {};
-                }
-            }
-        }
-
-        const friendId = friend.id;
-
-        if (!users[friendId]) {
-            users[friendId] = {
-                message: 0,
-                voice: 0
-            };
-        }
-
-        users[friendId][type] += score;
-
-        fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), async (err) => {
-            if (err) {
-                console.error(err);
-                return;
-            }
-        });
+        const col = await db.collection('friendships');
+        const filter = { guildId: guild.id, userId: user.id, friendId: friend.id };
+        const update = { $inc: { [type]: score } };
+        await col.updateOne(filter, update, { upsert: true });
     },
 
     async setScore(score, user, friend, guild, type = 'message') {
-        const usersPath = path.join(__dirname, './friendships/' + guild.id + '/' + user.id + '.json');
-        const folderPath = path.dirname(usersPath);
-
         if(friend.bot || user.bot || friend.id === user.id) return;
 
-        if (!fs.existsSync(folderPath)) {
-            fs.mkdirSync(folderPath);
-        }
+        const col = await db.collection('friendships');
+        const filter = { guildId: guild.id, userId: user.id, friendId: friend.id };
+        const update = { $set: { [type]: score } };
+        await col.updateOne(filter, update, { upsert: true });
+    },
 
-        let users = {};
+    async setScore(message, voice, user, friend, guild) {
+        if(friend.bot || user.bot || friend.id === user.id) return;
 
-        if (fs.existsSync(usersPath)) {
-            const data = fs.readFileSync(usersPath, 'utf8');
-            
-            if (data.trim().length === 0) {
-                users = {};
-            } else {
-                try {
-                    users = JSON.parse(data);
-                } catch (e) {
-                    console.error("Plik JSON jest uszkodzony, resetuję dane.");
-                    users = {};
-                }
-            }
-        }
-
-        const friendId = friend.id;
-
-        if (!users[friendId]) {
-            users[friendId] = {
-                message: 0,
-                voice: 0
-            };
-        }
-
-        users[friendId][type] = score;
-
-        fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), async (err) => {
-            if (err) {
-                console.error(err);
-                return;
-            }
-        });
+        const col = await db.collection('friendships');
+        const filter = { guildId: guild.id, userId: user.id, friendId: friend.id };
+        const update = { $set: { message: message, voice: voice } };
+        await col.updateOne(filter, update, { upsert: true });
     },
 
     async getScore(user, friend, guild) {
-        const usersPath = path.join(__dirname, './friendships/' + guild.id + '/' + user.id + '.json');
-
         if(friend.bot || user.bot || friend.id === user.id) return [0,0,0];
-
-        if (fs.existsSync(usersPath)) {
-            const data = fs.readFileSync(usersPath, 'utf8');
-            if (data.trim().length === 0) {
-                return [0,0,0];
-            } else {
-                try {
-                    const users = JSON.parse(data);
-                    if (!users[friend.id]) return [0,0,0];
-
-                    return [users[friend.id].message || 0, users[friend.id].voice || 0, (users[friend.id].message || 0) + (users[friend.id].voice || 0)];
-                } catch (e) {
-                    console.error("Plik JSON jest uszkodzony, resetuję dane.");
-                    return 0;
-                }
-            }
-        } else {
-            return [0,0,0];
-        }
+        const col = await db.collection('friendships');
+        const doc = await col.findOne({ guildId: guild.id, userId: user.id, friendId: friend.id });
+        if (!doc) return [0,0,0];
+        return [(doc.message||0),(doc.voice||0),(doc.message||0)+(doc.voice||0)];
     },  
 
     async _getTotalUserPoints(user, guild) {
-        const usersPath = path.join(__dirname, './friendships/' + guild.id + '/' + user.id + '.json');
-        if (!fs.existsSync(usersPath)) return 0;
-        
-        try {
-            const data = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-            return Object.values(data).reduce((total, info) => total + (info.message || 0) + (info.voice || 0), 0);
-        } catch (e) {
-            return 0;
-        }
+        const col = await db.collection('friendships');
+        const cursor = col.find({ guildId: guild.id, userId: user.id });
+        let total = 0;
+        await cursor.forEach(d => { total += (d.message||0) + (d.voice||0); });
+        return total;
     },
 };

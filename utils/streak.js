@@ -1,157 +1,126 @@
-const fs = require('fs');
-const path = require('path');
-const { EmbedBuilder } = require('discord.js');
-const { PermissionFlagsBits, MessageFlags } = require('discord.js');
+const db = require('./db');
+
+/**
+ * Stores streak information in a MongoDB collection named "streaks".
+ * Each document has: { guildId, userId, targetId, currentStreak, lastInteraction }
+ * Use targetId = '__guild__' to record the guild-wide streak for the user.
+ */
+
+function todayString() {
+    return new Date().toISOString().split('T')[0];
+}
+
+async function _getDoc(guildId, userId, targetId) {
+    const col = await db.collection('streaks');
+    let doc = await col.findOne({ guildId, userId, targetId });
+    if (!doc) {
+        await col.insertOne({ guildId, userId, targetId, currentStreak: 0, lastInteraction: null });
+        doc = await col.findOne({ guildId, userId, targetId });
+    }
+    return doc;
+}
+
+async function _updateDoc(guildId, userId, targetId, fields) {
+    const col = await db.collection('streaks');
+    await col.updateOne({ guildId, userId, targetId }, { $set: fields }, { upsert: true });
+}
 
 module.exports = {
     async addStreak(user, target, guild) {
-        const streaksPath = path.join(__dirname, './streaks/' + guild.id + '/' + user.id +'.json');
-        let streaksData = {};
+        const guildId = guild.id;
+        const userId = user.id;
+        const targetId = target.id || '__guild__';
+        const last = todayString();
 
-        if (fs.existsSync(streaksPath)) {
-            const data = fs.readFileSync(streaksPath, 'utf8');
-            streaksData = JSON.parse(data);
-        }
+        const doc = await _getDoc(guildId, userId, targetId);
+        let currentStreak = doc.currentStreak;
+        const lastDate = doc.lastInteraction;
 
-        if (!streaksData[target.id]) {
-            streaksData[target.id] = {
-                currentStreak: -1,
-                lastInteraction: null
-            };
-        }
-
-        if(!streaksData["guildStreak"]) {
-            streaksData["guildStreak"] = {
-                currentStreak: -1,
-                lastInteraction: null
-            };
-        }
-
-        const last = new Date().toISOString().split('T')[0];
-        if(streaksData[target.id].lastInteraction !== last) {
-            if(streaksData[target.id].lastInteraction) {
-                const lastDate = new Date(streaksData[target.id].lastInteraction);
-                const currentDate = new Date(last);
-                const diffTime = Math.abs(currentDate - lastDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if(diffDays > 1) {
-                    streaksData[target.id].currentStreak = -1;
+        if (lastDate !== last) {
+            if (lastDate) {
+                const diff = Math.ceil((new Date(last) - new Date(lastDate)) / (1000 * 60 * 60 * 24));
+                if (diff > 1) {
+                    currentStreak = 0;
                 }
             }
-
-            streaksData[target.id].currentStreak = (streaksData[target.id].currentStreak || 0) + 1;
-            streaksData[target.id].lastInteraction = last;
+            currentStreak = (currentStreak || 0) + 1;
+            await _updateDoc(guildId, userId, targetId, { currentStreak, lastInteraction: last });
         }
-
-        if(streaksData["guildStreak"].lastInteraction !== last) {
-            if(streaksData["guildStreak"].lastInteraction) {
-                const lastDate = new Date(streaksData["guildStreak"].lastInteraction);
-                const currentDate = new Date(last);
-                const diffTime = Math.abs(currentDate - lastDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if(diffDays > 1) {
-                    streaksData["guildStreak"].currentStreak = -1;
-                }
-            }
-
-            streaksData["guildStreak"].currentStreak = (streaksData["guildStreak"].currentStreak || 0) + 1;
-            streaksData["guildStreak"].lastInteraction = last;
-        }
-        
-        const guildData = streaksData["guildStreak"];
-        delete streaksData["guildStreak"];
-
-        const sortedEntries = Object.entries(streaksData).sort(([, a], [, b]) => b.currentStreak - a.currentStreak);
-
-        const finalSortedData = {
-            guildStreak: guildData,
-            ...Object.fromEntries(sortedEntries)
-        };
-
-        if (!fs.existsSync(path.dirname(streaksPath))) {
-            fs.mkdirSync(path.dirname(streaksPath), { recursive: true });
-        }
-        
-        fs.writeFileSync(streaksPath, JSON.stringify(finalSortedData, null, 2));
     },
 
     async getStreak(user, target, guild) {
-        const streaksPath = path.join(__dirname, './streaks/' + guild.id + '/' + user.id +'.json');
-        if (fs.existsSync(streaksPath)) {
-            const data = fs.readFileSync(streaksPath, 'utf8');
-            const streaksData = JSON.parse(data);
+        const guildId = guild.id;
+        const userId = user.id;
+        const targetId = target.id;
 
-            if(streaksData[target.id].lastInteraction) {
-                const last = new Date().toISOString().split('T')[0];
-                const lastDate = new Date(streaksData[target.id].lastInteraction);
-                const currentDate = new Date(last);
-                const diffTime = Math.abs(currentDate - lastDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if(diffDays > 1) {
-                    streaksData[target.id].currentStreak = 0;
-                    streaksData[target.id].lastInteraction = last;
-                    fs.writeFileSync(streaksPath, JSON.stringify(streaksData, null, 2));
-                }
+        const col = await db.collection('streaks');
+        const doc = await col.findOne({ guildId, userId, targetId });
+        if (!doc) return 0;
+
+        const last = todayString();
+        const lastDate = doc.lastInteraction;
+        let currentStreak = doc.currentStreak;
+
+        if (lastDate && lastDate !== last) {
+            const diff = Math.ceil((new Date(last) - new Date(lastDate)) / (1000 * 60 * 60 * 24));
+            if (diff > 1 && currentStreak > 0) {
+                currentStreak = 0;
+                await _updateDoc(guildId, userId, targetId, { currentStreak, lastInteraction: last });
             }
-
-            return streaksData[target.id]?.currentStreak || 0;
         }
-        return 0;
+
+        return currentStreak || 0;
     },
 
     async getTopStreaks(user, guild, limit = 5) {
-        const streaksPath = path.join(__dirname, './streaks/' + guild.id + '/' + user.id +'.json');
-        if (fs.existsSync(streaksPath)) {
-            const data = fs.readFileSync(streaksPath, 'utf8');
-            const streaksData = JSON.parse(data);
-            const entries = Object.entries(streaksData).filter(([key]) => key !== "guildStreak").sort(([, a], [, b]) => b.currentStreak - a.currentStreak).slice(0, limit);
+        const guildId = guild.id;
+        const userId = user.id;
+        const col = await db.collection('streaks');
 
-            const last = new Date().toISOString().split('T')[0];
-            const currentDate = new Date(last);
-            let changed = false;
-            for (const [id, data] of entries) {
-                if (id === "guildStreak") continue;
-                
-                const lastDate = new Date(data.lastInteraction);
-                const diffDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+        const now = todayString();
+        const cursor = col.find({ guildId, userId, targetId: { $ne: '__guild__' } })
+            .sort({ currentStreak: -1 })
+            .limit(limit);
 
-                if (diffDays > 1 && data.currentStreak > 0) {
-                    streaksData[id].currentStreak = 0;
-                    streaksData[id].lastInteraction = last;
-                    changed = true;
-                }
+        const entries = await cursor.toArray();
+
+        // reset any expired streaks
+        let changedDocs = [];
+        for (const doc of entries) {
+            const lastDate = doc.lastInteraction;
+            const diff = lastDate ? Math.floor((new Date(now) - new Date(lastDate)) / (1000 * 60 * 60 * 24)) : 0;
+            if (diff > 1 && doc.currentStreak > 0) {
+                changedDocs.push(doc);
             }
-
-            if (changed) {
-                fs.writeFileSync(streaksPath, JSON.stringify(streaksData, null, 2));
-            }
-
-            return entries.map(([id, data]) => ({ id, currentStreak: data.currentStreak }));
         }
-        return [];
+        if (changedDocs.length) {
+            for (const doc of changedDocs) {
+                await _updateDoc(guildId, userId, doc.targetId, { currentStreak: 0, lastInteraction: now });
+            }
+        }
+
+        return entries.map(d => ({ id: d.targetId, currentStreak: d.currentStreak }));
     },
 
-
     async getGuildStreak(user, guild) {
-        const streaksPath = path.join(__dirname, './streaks/' + guild.id + '/' + user.id +'.json');
-        if (fs.existsSync(streaksPath)) {
-            const data = fs.readFileSync(streaksPath, 'utf8');
-            const streaksData = JSON.parse(data);
+        const guildId = guild.id;
+        const userId = user.id;
+        const targetId = '__guild__';
+        const col = await db.collection('streaks');
 
-            if(streaksData["guildStreak"].lastInteraction) {
-                const last = new Date().toISOString().split('T')[0];
-                const lastDate = new Date(streaksData["guildStreak"].lastInteraction);
-                const currentDate = new Date(last);
-                const diffTime = Math.abs(currentDate - lastDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if(diffDays > 1) {
-                    streaksData["guildStreak"].currentStreak = 0;
-                    streaksData["guildStreak"].lastInteraction = last;
-                }
+        const doc = await col.findOne({ guildId, userId, targetId });
+        if (!doc) return 0;
+
+        const now = todayString();
+        const lastDate = doc.lastInteraction;
+        let currentStreak = doc.currentStreak;
+        if (lastDate && lastDate !== now) {
+            const diff = Math.ceil((new Date(now) - new Date(lastDate)) / (1000 * 60 * 60 * 24));
+            if (diff > 1) {
+                currentStreak = 0;
+                await _updateDoc(guildId, userId, targetId, { currentStreak, lastInteraction: now });
             }
-
-            return streaksData["guildStreak"]?.currentStreak || 0;
         }
-        return 0;
+        return currentStreak || 0;
     },
 };

@@ -1,7 +1,5 @@
-const fs = require('node:fs');
-const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
-const exp_module = require('../utils/exp/exp_module');
+const exp_module = require('../utils/exp_module');
 
 module.exports = {
     name: 'level',
@@ -17,36 +15,15 @@ module.exports = {
     ],
 
     async execute(interaction) {
-            const usersPath = path.join(__dirname, '../utils/exp/users/' + interaction.guild.id + '.json');
-            const folderPath = path.dirname(usersPath);
-    
-            if (!fs.existsSync(folderPath)) {
-                fs.mkdirSync(folderPath);
-            }
-    
-            let users = {};
-    
-            if (fs.existsSync(usersPath)) {
-                const data = fs.readFileSync(usersPath, 'utf8');
-                users = JSON.parse(data);
-            }
-    
             const user = interaction.options.getUser('user') || interaction.user;
-            const userId = user.id;
-
-            let xp = 0;
-
-            if (users[userId]) {
-                xp = users[userId].xp;
-            }
-
-            const level = exp_module.get_level(xp);
+            const xp = await exp_module.get_xp(user, interaction.guild);
+            const level = exp_module.xpToLevel ? exp_module.xpToLevel(xp) : exp_module.get_level(user, interaction.guild); // backwards compatibility
             const xpToNextLevel = exp_module.getTotalXPForLevel(level + 1) - xp;
 
             const warningEmbed = new EmbedBuilder()
                     .setColor('Yellow')
                     .setTitle(`${user.username}`)
-                    .setDescription(`-# Ogólne XP: **${xp}**\n\n-# Poziom: **${level}**\n-# XP do następnego poziomu: **${xpToNextLevel}**`)
+                    .setDescription(`-# Ogólne XP: **${Math.round(xp)}**\n\n-# Poziom: **${level}**\n-# XP do następnego poziomu: **${Math.round(xpToNextLevel)}**`)
                     .setThumbnail(user.displayAvatarURL());
 
             interaction.reply({ embeds: [warningEmbed] });

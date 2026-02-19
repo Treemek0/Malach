@@ -3,20 +3,24 @@ const { Client, GatewayIntentBits, Events, Collection, EmbedBuilder, ChannelType
 const fs = require('node:fs');
 const path = require('node:path');
 const colors = require('./colors');
-const expModule = require('./utils/exp/exp_module.js');
+const expModule = require('./utils/exp_module.js');
 const settings = require('./utils/settings.js');
 const friendshipUtils = require('./utils/friendship.js');
+const db = require('./utils/db');
 
 const client = new Client({ 
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates] 
 });
+
+// establish database connection early
+db.connect().then(() => console.log(colors.green + "Connected to MongoDB!" + colors.reset)).catch(err => console.error('MongoDB connection error', err));
 
 console.log("Trying to login as: ", process.env.APP_ID);
 
 const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Malach is online!'));
-app.listen(3000, () => console.log('Server started'));
+app.listen(3000, () => console.log(colors.green + "Web server started on port 3000!" + colors.reset));
 
 client.commands = new Collection();
 
@@ -124,30 +128,27 @@ setInterval(async () => {
     });
 
     for (const [guildId, guild] of client.guilds.cache) {
-        const mutesPath = path.join(__dirname, './moderation/' + guildId + '/mutes.json');
-        if (!fs.existsSync(mutesPath)) continue;
-
-        const data = fs.readFileSync(mutesPath, 'utf8');
-        if (!data) continue;
-
-        const mutes = JSON.parse(data);
-        let updated = false;
-
         console.log(colors.blue + `Checking mutes for guild ${guild.name} (${guildId})...` + colors.reset);
+        // find expired mutes in database
+        const col = await db.collection('mutes');
+        const now = new Date();
+        const expired = await col.find({ guildId, end_date: { $ne: null, $lte: now.toISOString() } }).toArray();
 
-        for (const userId in mutes) {
-            const userMute = mutes[userId][0];
-            const now = new Date();
-            if (userMute.end_date && new Date(userMute.end_date) <= now) {
-                const member = await guild.members.fetch(userId).catch(() => null);
-                if (!member) continue;
-                
-                 try {
-                    member.roles.set(userMute.roles);
-                    console.log(`Przywrócono role dla ${member.user.tag}: ${userMute.roles.join(', ')}`);
+        for (const doc of expired) {
+            const userId = doc.userId;
+            const member = await guild.members.fetch(userId).catch(() => null);
+            if (!member) {
+                // remove entry anyway
+                await col.deleteOne({ guildId, userId });
+                continue;
+            }
 
-                    const guildSettings = await settings.get_settings(guild.id);
-                    if (!guildSettings || !guildSettings.logs_channel) continue;
+            try {
+                await member.roles.set(doc.roles);
+                console.log(`Przywrócono role dla ${member.user.tag}: ${doc.roles.join(', ')}`);
+
+                const guildSettings = await settings.get_settings(guild.id);
+                if (guildSettings && guildSettings.logs_channel) {
                     const logChannel = guild.channels.cache.get(guildSettings.logs_channel);
                     if (logChannel) {
                         const unmuteEmbed = new EmbedBuilder()
@@ -158,20 +159,14 @@ setInterval(async () => {
 
                         logChannel.send({ embeds: [unmuteEmbed] });
                     }
-
-                    member.send({ embeds: [new EmbedBuilder().setColor('#634700').setTitle('Zostałeś odciszony!').setDescription('Twoje wyciszenie dobiegło końca. Możesz ponownie rozmawiać na serwerze.')] }).catch(() => null);
-                } catch (error) {
-                    console.error('Błąd podczas przywracania ról:', error);
                 }
-                
-                
-                delete mutes[userId];
-                updated = true;
-            }
-        }
 
-        if (updated) {
-            fs.writeFileSync(mutesPath, JSON.stringify(mutes, null, 2));
+                member.send({ embeds: [new EmbedBuilder().setColor('#634700').setTitle('Zostałeś odciszony!').setDescription('Twoje wyciszenie dobiegło końca. Możesz ponownie rozmawiać na serwerze.')] }).catch(() => null);
+            } catch (error) {
+                console.error('Błąd podczas przywracania ról:', error);
+            }
+
+            await col.deleteOne({ guildId, userId });
         }
     }
 }, 30000);

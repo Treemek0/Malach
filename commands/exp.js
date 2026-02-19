@@ -1,10 +1,8 @@
-const fs = require('node:fs');
-const path = require('node:path');
 const { EmbedBuilder, ApplicationCommandOptionType } = require('discord.js');
 const { PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 const settings = require('../utils/settings.js');
-const exp_module = require('../utils/exp/exp_module');
+const exp_module = require('../utils/exp_module.js');
 
 
 module.exports = {

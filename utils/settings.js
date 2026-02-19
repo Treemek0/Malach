@@ -1,26 +1,24 @@
-const fs = require('node:fs');
-const path = require('node:path');
+const db = require('./db');
 
 module.exports = {
+    /**
+     * Retrieve guild settings from MongoDB. Returns an empty object if none exist.
+     */
     async get_settings(guildId) {
-        const settingsPath = path.join(__dirname, '../settings/' + guildId + '.json');
-        const folderPath = path.dirname(settingsPath);
+        const col = await db.collection('settings');
+        const doc = await col.findOne({ guildId });
+        return doc ? doc.settings : {};
+    },
 
-        if (!fs.existsSync(folderPath)) {
-            fs.mkdirSync(folderPath, { recursive: true });
-            return {}; // Zwracamy pusty obiekt
-        }
-
-        if (fs.existsSync(settingsPath)) {
-            try {
-                const data = fs.readFileSync(settingsPath, 'utf8');
-                return JSON.parse(data);
-            } catch (err) {
-                console.error("Błąd parsowania pliku JSON:", err);
-                return {};
-            }
-        }
-
-        return {}; // Jeśli plik nie istnieje, również pusty obiekt
-    }, 
-}
+    /**
+     * Update (or insert) guild settings in MongoDB.
+     */
+    async update_settings(guildId, settings) {
+        const col = await db.collection('settings');
+        await col.updateOne(
+            { guildId },
+            { $set: { settings } },
+            { upsert: true }
+        );
+    }
+};

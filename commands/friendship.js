@@ -33,7 +33,7 @@ module.exports = {
             }
 
             const list = topFriendships.map((f, index) => {
-                const totalMinutes = Math.round(f.friendData[1] * 5);
+                const totalMinutes = Math.round(f.friendData[1] * 2);
                 
                 let timeFormatted = `${totalMinutes}min`;
                 if (totalMinutes >= 60) {
@@ -69,7 +69,7 @@ module.exports = {
             const progress = Math.round((friendshipScore / 100) * 20);
             const progressBar = "|" + full.repeat(progress) + empty.repeat(20 - progress) + "|";
 
-            const totalMinutes = Math.round(friendshipData[1] * 5);
+            const totalMinutes = Math.round(friendshipData[1] * 2);
             let timeFormatted = `${totalMinutes}min`;
             if (totalMinutes >= 60) {
                 const hours = Math.floor(totalMinutes / 60);

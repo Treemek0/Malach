@@ -1,7 +1,5 @@
-const fs = require('node:fs');
-const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
-const exp_module = require('../utils/exp/exp_module');
+const exp_module = require('../utils/exp_module');
 
 const streakModule = require('../utils/streak');
 const settingsModule = require('../utils/settings');
