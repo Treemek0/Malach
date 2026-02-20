@@ -15,13 +15,16 @@ module.exports = {
     ],
 
     async execute(interaction) {
-            const col = await db.collection('xp');
-            const docs = await col.find({ guildId: interaction.guild.id }).toArray();
-            const page = interaction.options.getInteger('page') || 1;
-            const usersPerPage = 10;
-            const sortedUsers = docs.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-            const start = (page - 1) * usersPerPage;
-            const end = start + usersPerPage;
+        const sortedUsers = await exp_module.get_top_users(interaction.guild.id);
+        const page = interaction.options.getInteger('page') || 1;
+        const usersPerPage = 10;
+        const totalPages = Math.ceil(sortedUsers.length / usersPerPage) || 1;
+        if (page > totalPages || page < 1) {
+            return interaction.reply({ content: `Strona nie istnieje. Maksymalna strona to ${totalPages}.`, ephemeral: true });
+        }
+
+        const start = (page - 1) * usersPerPage;
+        const end = start + usersPerPage;
 
             const rankingList = sortedUsers.slice(start, end).map((doc, index) => {
                 const level = exp_module.xpToLevel ? exp_module.xpToLevel(doc.xp || 0) : exp_module.get_level({id: doc.userId}, interaction.guild);

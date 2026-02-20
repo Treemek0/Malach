@@ -100,5 +100,18 @@ async add_xp(user, guild, xp) {
         const base = xpForSecondLevel;
         const r = growthRate;
         return Math.round(base * (Math.pow(r, level - 1) - 1) / (r - 1));
+    },
+
+    async get_top_users(guildId) {
+        const col = await db.collection('xp');
+        const doc = await col.findOne({ guildId: guildId });
+
+        if (!doc || !doc.users) return [];
+        const userArray = Object.entries(doc.users).map(([userId, xp]) => ({
+            userId,
+            xp
+        }));
+
+        return userArray.sort((a, b) => b.xp - a.xp);
     }
 };
