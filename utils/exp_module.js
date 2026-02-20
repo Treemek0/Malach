@@ -30,14 +30,16 @@ module.exports = {
 async add_xp(user, guild, xp) {
         if (user.bot) return;
 
-        const col = db.collection('xp');
+        const col = await db.collection('xp');
         const filter = { guildId: guild.id };
         
+        // Use $inc with Dot Notation: users.USER_ID
         const update = { $inc: { [`users.${user.id}`]: xp } };
         const opts = { upsert: true, returnDocument: 'after' };
         
         const result = await col.findOneAndUpdate(filter, update, opts);
         
+        // Access the XP from the nested object
         const totalXP = result.users[user.id];
 
         console.log(`Added ${xp} XP to user ${user.tag}. Total XP: ${totalXP}`);
@@ -64,8 +66,8 @@ async add_xp(user, guild, xp) {
 
     async set_xp(user, guild, xp) {
         if (user.bot) return;
-        const col = db.collection('xp');
-        // Updates only the specific user field inside the guild document
+        const col = await db.collection('xp');
+
         await col.updateOne(
             { guildId: guild.id }, 
             { $set: { [`users.${user.id}`]: xp } }, 
@@ -76,9 +78,9 @@ async add_xp(user, guild, xp) {
 
     async get_xp(user, guild) {
         if (user.bot) return 0;
-        const col = db.collection('xp');
+        const col = await db.collection('xp');
         const doc = await col.findOne({ guildId: guild.id });
-        // Return the specific user's XP from the object, or 0 if they don't exist
+
         return doc?.users?.[user.id] || 0;
     },
 
