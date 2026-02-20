@@ -27,15 +27,18 @@ module.exports = {
         await this.add_xp(message.author, message.guild, xpPerMessage + additionalXP);
     },
 
-    async add_xp(user, guild, xp) {
+async add_xp(user, guild, xp) {
         if (user.bot) return;
 
-        const col = await db.collection('xp');
-        const filter = { guildId: guild.id, userId: user.id };
-        const update = { $inc: { xp: xp } };
+        const col = db.collection('xp');
+        const filter = { guildId: guild.id };
+        
+        const update = { $inc: { [`users.${user.id}`]: xp } };
         const opts = { upsert: true, returnDocument: 'after' };
+        
         const result = await col.findOneAndUpdate(filter, update, opts);
-        const totalXP = result.value?.xp || xp;
+        
+        const totalXP = result.users[user.id];
 
         console.log(`Added ${xp} XP to user ${user.tag}. Total XP: ${totalXP}`);
 
@@ -43,6 +46,7 @@ module.exports = {
         if (totalXP >= xpRequiredForNextLevel) {
             const level = this.xpToLevel(totalXP);
             console.log(`User ${user.tag} leveled up to level ${level}!`);
+            
             const guildSettings = await settings.get_settings(guild.id);
             if (guildSettings.lvlup_channel) {
                 const channel = guild.channels.cache.get(guildSettings.lvlup_channel);
@@ -51,7 +55,7 @@ module.exports = {
                         .setColor('Green')
                         .setTitle(`Użytkownik ${user.username} osiągnął nowy poziom!`)
                         .setThumbnail(user.displayAvatarURL())
-                        .setDescription('Zdobył **' + level + '** poziom!');
+                        .setDescription(`Zdobył **${level}** poziom!`);
                     channel.send({ embeds: [lvlupEmbed] });
                 }
             }
@@ -60,16 +64,22 @@ module.exports = {
 
     async set_xp(user, guild, xp) {
         if (user.bot) return;
-        const col = await db.collection('xp');
-        await col.updateOne({ guildId: guild.id, userId: user.id }, { $set: { xp } }, { upsert: true });
+        const col = db.collection('xp');
+        // Updates only the specific user field inside the guild document
+        await col.updateOne(
+            { guildId: guild.id }, 
+            { $set: { [`users.${user.id}`]: xp } }, 
+            { upsert: true }
+        );
         console.log(`Set ${xp} XP to user ${user.tag}.`);
     },
 
     async get_xp(user, guild) {
         if (user.bot) return 0;
-        const col = await db.collection('xp');
-        const doc = await col.findOne({ guildId: guild.id, userId: user.id });
-        return doc?.xp || 0;
+        const col = db.collection('xp');
+        const doc = await col.findOne({ guildId: guild.id });
+        // Return the specific user's XP from the object, or 0 if they don't exist
+        return doc?.users?.[user.id] || 0;
     },
 
     async get_level(user, guild) {

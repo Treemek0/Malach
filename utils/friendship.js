@@ -69,66 +69,84 @@ module.exports = {
         return Math.min(Math.ceil(finalScore), 100);
     },
 
-    async getTopFriendships(user, guild) {
-        const col = await db.collection('friendships');
-        const cursor = col.find({ guildId: guild.id, userId: user.id });
-        const entries = await cursor.toArray();
-        const limit = 10;
-        const topByPoints = entries
-            .map(f => ({ id: f.friendId, score: (f.message || 0) + (f.voice || 0) }))
-            .sort((a, b) => b.score - a.score)
-            .slice(0, limit);
-
-        const detailedTop = await Promise.all(topByPoints.map(async (f) => {
-            const targetUser = { id: f.id };
-            const friendData = await this.getScore(user, targetUser, guild);
-            const percentage = await this.getFriendshipScore(user, friendData, targetUser, guild);
-            return { id: f.id, percentage, friendData };
-        }));
-
-        return detailedTop.sort((a, b) => b.percentage - a.percentage).slice(0, 5);
-    },
-
     async addScore(score, user, friend, guild, type = 'message') {
         if(friend.bot || user.bot || friend.id === user.id) return;
 
-        const col = await db.collection('friendships');
-        const filter = { guildId: guild.id, userId: user.id, friendId: friend.id };
-        const update = { $inc: { [type]: score } };
+        const col = db.collection('friendships');
+        const filter = { guildId: guild.id, userId: user.id };
+        
+        // Dot notation: friends.FRIEND_ID.TYPE
+        const update = { $inc: { [`friends.${friend.id}.${type}`]: score } };
+        
         await col.updateOne(filter, update, { upsert: true });
     },
 
-    async setScore(score, user, friend, guild, type = 'message') {
+    // 2. SET both scores at once
+    async setScore(messageScore, voiceScore, user, friend, guild) {
         if(friend.bot || user.bot || friend.id === user.id) return;
 
-        const col = await db.collection('friendships');
-        const filter = { guildId: guild.id, userId: user.id, friendId: friend.id };
-        const update = { $set: { [type]: score } };
+        const col = db.collection('friendships');
+        const filter = { guildId: guild.id, userId: user.id };
+        
+        const update = { 
+            $set: { 
+                [`friends.${friend.id}.message`]: messageScore,
+                [`friends.${friend.id}.voice`]: voiceScore
+            } 
+        };
+        
         await col.updateOne(filter, update, { upsert: true });
     },
 
-    async setScore(message, voice, user, friend, guild) {
-        if(friend.bot || user.bot || friend.id === user.id) return;
-
-        const col = await db.collection('friendships');
-        const filter = { guildId: guild.id, userId: user.id, friendId: friend.id };
-        const update = { $set: { message: message, voice: voice } };
-        await col.updateOne(filter, update, { upsert: true });
-    },
-
+    // 3. GET score for a specific friend
     async getScore(user, friend, guild) {
         if(friend.bot || user.bot || friend.id === user.id) return [0,0,0];
-        const col = await db.collection('friendships');
-        const doc = await col.findOne({ guildId: guild.id, userId: user.id, friendId: friend.id });
-        if (!doc) return [0,0,0];
-        return [(doc.message||0),(doc.voice||0),(doc.message||0)+(doc.voice||0)];
-    },  
+        
+        const col = db.collection('friendships');
+        const doc = await col.findOne({ guildId: guild.id, userId: user.id });
+        
+        const data = doc?.friends?.[friend.id];
+        if (!data) return [0,0,0];
 
-    async _getTotalUserPoints(user, guild) {
-        const col = await db.collection('friendships');
-        const cursor = col.find({ guildId: guild.id, userId: user.id });
-        let total = 0;
-        await cursor.forEach(d => { total += (d.message||0) + (d.voice||0); });
-        return total;
+        const msg = data.message || 0;
+        const vnc = data.voice || 0;
+        return [msg, vnc, msg + vnc];
     },
+
+    // 4. GET TOP FRIENDS (Leaderboard for one user)
+    async getTopFriendships(user, guild) {
+        const col = db.collection('friendships');
+        const doc = await col.findOne({ guildId: guild.id, userId: user.id });
+        
+        if (!doc || !doc.friends) return [];
+
+        // Convert the friends object into a list we can sort
+        const detailedTop = Object.entries(doc.friends).map(([friendId, data]) => {
+            const msg = data.message || 0;
+            const vnc = data.voice || 0;
+            const total = msg + vnc;
+            return {
+                id: friendId,
+                friendData: [msg, vnc, total],
+                score: total
+            };
+        });
+
+        // Sort by total score and take top 5
+        return detailedTop
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+    },
+
+    // 5. TOTAL POINTS (Sum of all friendships for one user)
+    async _getTotalUserPoints(user, guild) {
+        const col = db.collection('friendships');
+        const doc = await col.findOne({ guildId: guild.id, userId: user.id });
+        
+        if (!doc || !doc.friends) return 0;
+
+        return Object.values(doc.friends).reduce((acc, curr) => {
+            return acc + (curr.message || 0) + (curr.voice || 0);
+        }, 0);
+    }
 };
