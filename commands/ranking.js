@@ -26,17 +26,17 @@ module.exports = {
         const start = (page - 1) * usersPerPage;
         const end = start + usersPerPage;
 
-            const rankingList = sortedUsers.slice(start, end).map((doc, index) => {
-                const level = exp_module.xpToLevel ? exp_module.xpToLevel(doc.xp || 0) : exp_module.get_level({id: doc.userId}, interaction.guild);
-                return `**${start + index + 1}.** <@${doc.userId}> - Poziom: **${level}** (XP: **${Math.round(doc.xp || 0)}**)`;
-            }).join('\n');
+        const rankingList = sortedUsers.slice(start, end).map((userData, index) => {
+        const level = exp_module.xpToLevel(userData.xp);
+            return `**${start + index + 1}.** <@${userData.userId}> - Poziom: **${level}** (XP: **${Math.round(userData.xp)}**)`;
+        }).join('\n');
 
-            const rankingEmbed = new EmbedBuilder()
-                    .setColor('Gold')
-                    .setTitle(`Ranking użytkowników`)
-                    .setDescription(rankingList || 'Brak użytkowników w rankingu.')
-                    .setFooter({ text: `Strona: ${page}/${Math.ceil(sortedUsers.length / usersPerPage)}` });
+        const rankingEmbed = new EmbedBuilder()
+                .setColor('Gold')
+                .setTitle(`Ranking użytkowników`)
+                .setDescription(rankingList || 'Brak użytkowników w rankingu.')
+                .setFooter({ text: `Strona: ${page}/${Math.ceil(sortedUsers.length / usersPerPage)}` });
 
-            interaction.reply({ embeds: [rankingEmbed] });
+        interaction.reply({ embeds: [rankingEmbed] });
     },
 };

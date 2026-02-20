@@ -13,6 +13,7 @@ module.exports = {
             if (originalMessage.author.bot) return;
 
             streakModule.addStreak(message.author, originalMessage.author, message.guild);
+            streakModule.addStreak(message.author, message.guild);
             this.addScore(1, message.author, originalMessage.author, message.guild, 'message');
             return;
         }
@@ -29,10 +30,14 @@ module.exports = {
 
             if (msg.author.id !== message.author.id && !alreadyAdded.has(msg.author.id)) {
                 this.addScore(1, message.author, msg.author, message.guild, 'message');
-                streakModule.addStreak(message.author, msg.author, message.guild);
+                streakModule.addStreak(message.guild, message.author, msg.author);
 
                 alreadyAdded.add(msg.author.id);
             }
+        }
+
+        if(alreadyAdded.size > 0) {
+            streakModule.addStreak(message.guild, message.author);
         }
     },
 
@@ -40,21 +45,24 @@ module.exports = {
         const members = channel.members.filter(m => !m.user.bot);
 
         if(user.deaf || user.serverDeaf) return;
+        let wasSomeone = false;
         for (const member of members.values()) {
             if (member.id !== user.id) {
                 if(member.mute || member.selfMute || member.deaf) continue;
-                streakModule.addStreak(user, member.user, channel.guild);
+                streakModule.addStreak(channel.guild, user, member.user);
                 this.addScore(0.25, user, member.user, channel.guild, 'voice');
+                wasSomeone = true;
             }
         }
+        if(wasSomeone) streakModule.addStreak(channel.guild, user);
     },
 
-    async getFriendshipScore(user1, score1to2, user2, guild) {
+    async getFriendshipScore(user1, score1to2, user2, guild, pretotalPointsUser1 = null) {
         const score2to1 = await this.getScore(user2, user1, guild);
 
         if (score1to2[2] === 0 && score2to1[2] === 0) return 0;
 
-        const totalPointsUser1 = await this._getTotalUserPoints(user1, guild);
+        const totalPointsUser1 = pretotalPointsUser1 ?? await this._getTotalUserPoints(user1, guild);
         const totalPointsUser2 = await this._getTotalUserPoints(user2, guild);
 
         const friendship1 = score1to2[2] / (totalPointsUser1 || 1);
@@ -120,22 +128,29 @@ module.exports = {
         
         if (!doc || !doc.friends) return [];
 
-        // Convert the friends object into a list we can sort
-        const detailedTop = Object.entries(doc.friends).map(([friendId, data]) => {
-            const msg = data.message || 0;
-            const vnc = data.voice || 0;
-            const total = msg + vnc;
-            return {
-                id: friendId,
-                friendData: [msg, vnc, total],
-                score: total
-            };
-        });
+        const totalPointsUser1 = Object.values(doc.friends).reduce((acc, curr) => 
+            acc + (curr.message || 0) + (curr.voice || 0), 0
+        );
 
-        // Sort by total score and take top 5
-        return detailedTop
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 5);
+        const friendList = Object.entries(doc.friends).map(([friendId, data]) => ({
+            id: friendId,
+            score1to2: [(data.message || 0), (data.voice || 0), (data.message || 0) + (data.voice || 0)]
+        }));
+
+        // Process all reciprocal scores in parallel
+        const detailedTop = await Promise.all(friendList.map(async (f) => {
+            const targetUser = { id: f.id };
+            
+            const percentage = await this.getFriendshipScore(user, f.score1to2, targetUser, guild, totalPointsUser1);
+            
+            return { 
+                id: f.id, 
+                percentage, 
+                friendData: f.score1to2 
+            };
+        }));
+
+        return detailedTop.sort((a, b) => b.percentage - a.percentage).slice(0, 10);
     },
 
     // 5. TOTAL POINTS (Sum of all friendships for one user)

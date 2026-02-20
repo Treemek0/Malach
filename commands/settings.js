@@ -13,7 +13,7 @@ module.exports = {
             type: ApplicationCommandOptionType.Subcommand,
             options: [
                 { name: 'channel', description: 'Kanał powiadomień o poziomie', type: ApplicationCommandOptionType.Channel, required: true }
-            ]
+            ],
         },
         {
             name: 'logs_channel',
@@ -21,7 +21,7 @@ module.exports = {
             type: ApplicationCommandOptionType.Subcommand,
             options: [
                 { name: 'channel', description: 'Kanał powiadomień', type: ApplicationCommandOptionType.Channel, required: true }
-            ]
+            ],
         },
         {
             name: 'moderation_logs_channel',
@@ -29,7 +29,7 @@ module.exports = {
             type: ApplicationCommandOptionType.Subcommand,
             options: [
                 { name: 'channel', description: 'Kanał powiadomień moderacji', type: ApplicationCommandOptionType.Channel, required: true }
-            ]
+            ],
         },
         {
             name: 'report_channel',
@@ -37,7 +37,7 @@ module.exports = {
             type: ApplicationCommandOptionType.Subcommand,
             options: [
                 { name: 'channel', description: 'Kanał raportów', type: ApplicationCommandOptionType.Channel, required: true }
-            ]
+            ],
         },
         {
             name: 'mute_role',
@@ -45,7 +45,7 @@ module.exports = {
             type: ApplicationCommandOptionType.Subcommand,
             options: [
                 { name: 'role', description: 'Rola wyciszenia', type: ApplicationCommandOptionType.Role, required: true }
-            ]
+            ],
         },
         {
             name: 'streak_emoji',
@@ -53,7 +53,13 @@ module.exports = {
             type: ApplicationCommandOptionType.Subcommand,
             options: [
                 { name: 'emoji', description: 'Emoji streaka', type: ApplicationCommandOptionType.String, required: true }
-            ]
+            ],
+        },
+        {
+            name: 'view',
+            description: 'Wyświetl aktualne ustawienia serwera',
+            type: ApplicationCommandOptionType.Subcommand,
+            options: []
         }
     ],
 
@@ -69,12 +75,6 @@ module.exports = {
                 const channel = interaction.options.getChannel('channel');
                 guildSettings.lvlup_channel = channel.id;
                 response = `Kanał powiadomień o poziomie został ustawiony na ${channel}.`;
-                break;
-            }
-            case 'logs_channel': {
-                const channel = interaction.options.getChannel('channel');
-                guildSettings.logs_channel = channel.id;
-                response = `Kanał powiadomień został ustawiony na ${channel}.`;
                 break;
             }
             case 'moderation_logs_channel': {
@@ -100,6 +100,19 @@ module.exports = {
                 guildSettings.streak_emoji = emoji;
                 response = `Emoji streaka został ustawiony na ${emoji}.`;
                 break;
+            }
+            case 'view': {
+                const embed = new EmbedBuilder()
+                    .setColor('Blue')
+                    .setTitle('Aktualne Ustawienia Serwera')
+                    .setDescription(`-# **Kanał powiadomień o poziomie:** ${guildSettings.lvlup_channel ? `<#${guildSettings.lvlup_channel}>` : '⊘ Nie ustawiono'}\n` +
+                        `-# **Kanał powiadomień moderacji:** ${guildSettings.moderation_logs_channel ? `<#${guildSettings.moderation_logs_channel}>` : '⊘ Nie ustawiono'}\n` +
+                        `-# **Kanał zgłoszeń (/report):** ${guildSettings.report_channel ? `<#${guildSettings.report_channel}>` : '⊘ Nie ustawiono'}\n` +
+                        `-# **Rola wyciszenia:** ${guildSettings.mute_role ? `<@&${guildSettings.mute_role}>` : '⊘ Nie ustawiono'}\n` +
+                        `-# **Emoji streaka:** ${guildSettings.streak_emoji || '⊘ Nie ustawiono'}`)
+                    .setThumbnail(interaction.guild.iconURL());
+                interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+                return;
             }
             default:
                 response = 'Nieznana podkomenda.';

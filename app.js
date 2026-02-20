@@ -12,10 +12,9 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates] 
 });
 
-// establish database connection early
-db.connect().then(() => console.log(colors.green + "Connected to MongoDB!" + colors.reset)).catch(err => console.error('MongoDB connection error', err));
+db.connect().then(() => console.log(colors.green + "Connected to " + colors.cyan + "MongoDB!" + colors.reset)).catch(err => console.error('MongoDB connection error', err));
 
-console.log("Trying to login as: ", process.env.APP_ID);
+console.log(colors.yellow + "Trying to login as: " + colors.reset, process.env.APP_ID);
 
 const express = require('express');
 const app = express();
@@ -61,6 +60,46 @@ client.on('clientReady', async () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
+    if (interaction.isModalSubmit()) {
+        if (interaction.customId.startsWith('modal_level_')) { // roles for leveling
+            const roleId = interaction.customId.split('_')[2];
+            
+            const levelString = interaction.fields.getTextInputValue('level_input');
+            const level = parseInt(levelString);
+
+            if (isNaN(level) || level < 1) {
+                return interaction.reply({ 
+                    content: '❌ Podaj poprawną liczbę dodatnią dla poziomu!', 
+                    ephemeral: true 
+                });
+            }
+
+            try {
+                const guildSettings = await settings.get_settings(interaction.guild.id);
+
+                if (!guildSettings.level_reward_roles) {
+                    guildSettings.level_reward_roles = [];
+                }
+
+                guildSettings.level_reward_roles.push({
+                    role_id: roleId,
+                    level: level
+                });
+
+                await settings.update_settings(interaction.guild.id, guildSettings);
+
+                const role = interaction.guild.roles.cache.get(roleId);
+                await interaction.reply({ 
+                    content: `✅ Pomyślnie ustawiono nagrodę: Rola **${role ? role.name : roleId}** będzie przyznawana na **${level}** poziomie!`, 
+                    ephemeral: true 
+                });
+            } catch (error) {
+                console.error(error);
+                await interaction.reply({ content: 'Wystąpił błąd podczas zapisywania ustawień.', ephemeral: true });
+            }
+        }
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
@@ -148,8 +187,8 @@ setInterval(async () => {
                 console.log(`Przywrócono role dla ${member.user.tag}: ${doc.roles.join(', ')}`);
 
                 const guildSettings = await settings.get_settings(guild.id);
-                if (guildSettings && guildSettings.logs_channel) {
-                    const logChannel = guild.channels.cache.get(guildSettings.logs_channel);
+                if (guildSettings && guildSettings.moderation_logs_channel) {
+                    const logChannel = guild.channels.cache.get(guildSettings.moderation_logs_channel);
                     if (logChannel) {
                         const unmuteEmbed = new EmbedBuilder()
                             .setColor('#634700')
