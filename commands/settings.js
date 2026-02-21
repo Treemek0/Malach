@@ -56,6 +56,22 @@ module.exports = {
             ],
         },
         {
+            name: 'xp_per_message',
+            description: 'Ustaw ilość XP za wiadomość',
+            type: ApplicationCommandOptionType.Subcommand,
+            options: [
+                { name: 'xp', description: 'Ilość XP za wiadomość', type: ApplicationCommandOptionType.Integer, required: true }
+            ],
+        },
+        {   
+            name: 'xp_per_voice_minute',
+            description: 'Ustaw ilość XP za minutę w głosowym',
+            type: ApplicationCommandOptionType.Subcommand,
+            options: [
+                { name: 'xp', description: 'Ilość XP za minutę w głosowym', type: ApplicationCommandOptionType.Integer, required: true }
+            ]
+        },
+        {
             name: 'view',
             description: 'Wyświetl aktualne ustawienia serwera',
             type: ApplicationCommandOptionType.Subcommand,
@@ -101,6 +117,30 @@ module.exports = {
                 response = `Emoji streaka został ustawiony na ${emoji}.`;
                 break;
             }
+            case 'xp_per_message': {
+                const xp = interaction.options.getInteger('xp');
+                if (xp < 0) {
+                    return interaction.reply({ 
+                        content: '❌ Podaj poprawną liczbę dodatnią dla XP za wiadomość!', 
+                        ephemeral: true 
+                    });
+                }
+                guildSettings.xp_per_message = xp;
+                response = `XP za wiadomość został ustawiony na ${xp}.`;
+                break;
+            }
+            case 'xp_per_voice_minute': {
+                const xp = interaction.options.getInteger('xp');
+                if (xp < 0) {
+                    return interaction.reply({ 
+                        content: '❌ Podaj poprawną liczbę dodatnią dla XP za minutę w głosowym!', 
+                        ephemeral: true 
+                    });
+                }
+                guildSettings.xp_per_voice_minute = xp;
+                response = `XP za minutę w głosowym został ustawiony na ${xp}.`;
+                break;
+            }
             case 'view': {
                 const embed = new EmbedBuilder()
                     .setColor('Blue')
@@ -109,7 +149,9 @@ module.exports = {
                         `-# **Kanał powiadomień moderacji:** ${guildSettings.moderation_logs_channel ? `<#${guildSettings.moderation_logs_channel}>` : '⊘ Nie ustawiono'}\n` +
                         `-# **Kanał zgłoszeń (/report):** ${guildSettings.report_channel ? `<#${guildSettings.report_channel}>` : '⊘ Nie ustawiono'}\n` +
                         `-# **Rola wyciszenia:** ${guildSettings.mute_role ? `<@&${guildSettings.mute_role}>` : '⊘ Nie ustawiono'}\n` +
-                        `-# **Emoji streaka:** ${guildSettings.streak_emoji || '⊘ Nie ustawiono'}`)
+                        `-# **Emoji streaka:** ${guildSettings.streak_emoji || '⊘ Nie ustawiono'}` +
+                        `-# **XP za wiadomość:** ${guildSettings.xp_per_message || '4'}\n` +
+                        `-# **XP za minutę w głosowym:** ${guildSettings.xp_per_voice_minute || '0.5'}`)
                     .setThumbnail(interaction.guild.iconURL());
                 interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
                 return;
