@@ -150,7 +150,7 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 });
 
 setInterval(async () => {
-    activeInVoice.forEach(userId => {
+    activeInVoice.forEach(async userId => {
         const guild = client.guilds.cache.first();
         const state = guild.voiceStates.cache.get(userId);
 
@@ -159,7 +159,9 @@ setInterval(async () => {
 
             if (state.channel.members.filter(m => !m.user.bot).size > 1) { 
                 if (state.mute || state.selfMute || state.deaf || state.serverDeaf) return;
-                expModule.add_xp(state.member.user, state.guild, 0.5);
+                const guildSettings = await settings.get_settings(guild.id);
+                const xpPerHalfMinute = guildSettings.xp_per_voice_minute/2 || 0.5;
+                expModule.add_xp(state.member.user, state.guild, xpPerHalfMinute, guildSettings);
             }
         } else {
             activeInVoice.delete(userId);

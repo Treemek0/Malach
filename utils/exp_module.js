@@ -2,7 +2,6 @@ const { EmbedBuilder } = require('discord.js');
 const settings = require('./settings.js');
 const db = require('./db.js');
 
-const xpPerMessage = 4; // exp per message
 const xpForSecondLevel = 22;
 const growthRate = 1.3636364;
 const messageFromOnePersonLimit = 10;
@@ -24,13 +23,15 @@ module.exports = {
         if (message.content.length > 200) additionalXP += 0.5;
         if (message.attachments.size > 0) additionalXP += 0.5;
 
-        await this.add_xp(message.author, message.guild, xpPerMessage + additionalXP);
+        const guildSettings = await settings.get_settings(message.guild.id);
+
+        const xpPerMessage = guildSettings.xp_per_message || 4;
+        await this.add_xp(message.author, message.guild, xpPerMessage + additionalXP, guildSettings);
     },
 
-    async add_xp(user, guild, xp) {
+    async add_xp(user, guild, xp, guildSettings) {
         if (user.bot) return;
 
-        const guildSettings = await settings.get_settings(guild.id);
         if (guildSettings && guildSettings.xp_blacklist) {
             const member = await guild.members.fetch(user.id).catch(() => null);
             if (member && member.roles.cache.some(role => guildSettings.xp_blacklist.includes(role.id))) {
@@ -117,6 +118,7 @@ module.exports = {
             console.log(`User ${user.tag} leveled up to level ${level}!`);
             
             const assignedRoles = [];
+            const guildSettings = await settings.get_settings(guild.id);
 
             if(guildSettings && guildSettings.level_reward_roles) {
                 const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level);
