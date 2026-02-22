@@ -32,13 +32,15 @@ module.exports = {
     async add_xp(user, guild, xp, guildSettings) {
         if (user.bot) return;
 
+        const member = await guild.members.fetch(user.id).catch(() => null);
+        if (!member) return;
+
         if (guildSettings && guildSettings.xp_blacklist) {
-            const member = await guild.members.fetch(user.id).catch(() => null);
-            if (member && member.roles.cache.some(role => guildSettings.xp_blacklist.includes(role.id))) {
+            if (member.roles.cache.some(role => guildSettings.xp_blacklist.includes(role.id))) {
                 return; // Do not add XP if user is in the blacklist
             }
 
-            if(member && guildSettings.xp_whitelist.length > 0 && !member.roles.cache.some(role => guildSettings.xp_whitelist.includes(role.id))) {
+            if(guildSettings.xp_whitelist.length > 0 && !member.roles.cache.some(role => guildSettings.xp_whitelist.includes(role.id))) {
                 return; // Do not add XP if user is not in the whitelist
             }
         }
@@ -59,42 +61,44 @@ module.exports = {
 
         console.log(`Added ${xp} XP to user ${user.tag}. Total XP: ${totalXP}`);
 
-        const xpRequiredForNextLevel = this.getTotalXPForLevel(this.xpToLevel(totalXP-xp) + 1);
-        if (totalXP >= xpRequiredForNextLevel) {
-            const level = this.xpToLevel(totalXP);
+        const levelBeforeAdding = this.xpToLevel(totalXP - xp);
+        const level = this.xpToLevel(totalXP);
+        if (level > levelBeforeAdding) {
             console.log(`User ${user.tag} leveled up to level ${level}!`);
             
             const assignedRoles = [];
 
-            if(guildSettings && guildSettings.level_reward_roles) {
-                const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level);
-                for (const reward of rewardRoles) {
-                    const role = guild.roles.cache.get(reward.role_id);
-                    if (role) {
-                        await user.roles.add(role);
-                        assignedRoles.push(role);
-                        console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
+            if(guildSettings){
+                if(guildSettings.level_reward_roles) {
+                    const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level);
+                    for (const reward of rewardRoles) {
+                        const role = guild.roles.cache.get(reward.role_id);
+                        if (role) {
+                            await member.roles.add(role);
+                            assignedRoles.push(role);
+                            console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
+                        }
                     }
                 }
-            }
 
 
-            if (guildSettings.lvlup_channel) {
-                const channel = guild.channels.cache.get(guildSettings.lvlup_channel);
-                if (channel) {
-                    if(assignedRoles.length > 0) {
-                        const assignedRoleNames = assignedRoles.map(role => role.name).join(', ');
-                        var description = `Zdobył **${level}** poziom!\n-# Przydzielone role: ${assignedRoleNames}`;
-                    } else {
-                        var description = `Zdobył **${level}** poziom!`;
+                if (guildSettings.lvlup_channel) {
+                    const channel = guild.channels.cache.get(guildSettings.lvlup_channel);
+                    if (channel) {
+                        if(assignedRoles.length > 0) {
+                            const assignedRoleNames = assignedRoles.map(role => role.name).join(', ');
+                            var description = `Zdobył **${level}** poziom!\n-# Przydzielone role: ${assignedRoleNames}`;
+                        } else {
+                            var description = `Zdobył **${level}** poziom!`;
+                        }
+
+                        const lvlupEmbed = new EmbedBuilder()
+                            .setColor('Green')
+                            .setTitle(`Użytkownik ${user.username} osiągnął nowy poziom!`)
+                            .setThumbnail(user.displayAvatarURL())
+                            .setDescription(description);
+                        channel.send({ embeds: [lvlupEmbed] });
                     }
-
-                    const lvlupEmbed = new EmbedBuilder()
-                        .setColor('Green')
-                        .setTitle(`Użytkownik ${user.username} osiągnął nowy poziom!`)
-                        .setThumbnail(user.displayAvatarURL())
-                        .setDescription(description);
-                    channel.send({ embeds: [lvlupEmbed] });
                 }
             }
         }
@@ -112,43 +116,19 @@ module.exports = {
 
         console.log(`Set ${xp} XP to user ${user.tag}.`);
 
+        const assignedRoles = [];
+        const guildSettings = await settings.get_settings(guild.id);
+
         const level = this.xpToLevel(xp);
-        const xpRequiredForNextLevel = this.getTotalXPForLevel(level + 1);
-        if (xp >= xpRequiredForNextLevel) {
-            console.log(`User ${user.tag} leveled up to level ${level}!`);
-            
-            const assignedRoles = [];
-            const guildSettings = await settings.get_settings(guild.id);
 
-            if(guildSettings && guildSettings.level_reward_roles) {
-                const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level);
-                for (const reward of rewardRoles) {
-                    const role = guild.roles.cache.get(reward.role_id);
-                    if (role) {
-                        await user.roles.add(role);
-                        assignedRoles.push(role);
-                        console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
-                    }
-                }
-            }
-
-
-            if (guildSettings.lvlup_channel) {
-                const channel = guild.channels.cache.get(guildSettings.lvlup_channel);
-                if (channel) {
-                    if(assignedRoles.length > 0) {
-                        const assignedRoleNames = assignedRoles.map(role => role.name).join(', ');
-                        var description = `Zdobył **${level}** poziom!\n-# Przydzielone role: ${assignedRoleNames}`;
-                    } else {
-                        var description = `Zdobył **${level}** poziom!`;
-                    }
-
-                    const lvlupEmbed = new EmbedBuilder()
-                        .setColor('Green')
-                        .setTitle(`Użytkownik ${user.username} osiągnął nowy poziom!`)
-                        .setThumbnail(user.displayAvatarURL())
-                        .setDescription(description);
-                    channel.send({ embeds: [lvlupEmbed] });
+        if(guildSettings && guildSettings.level_reward_roles) {
+            const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level);
+            for (const reward of rewardRoles) {
+                const role = guild.roles.cache.get(reward.role_id);
+                if (role) {
+                    await user.roles.add(role);
+                    assignedRoles.push(role);
+                    console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
                 }
             }
         }

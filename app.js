@@ -138,13 +138,50 @@ client.on(Events.GuildMemberUpdate, (oldMember, newMember) => {
 const activeInVoice = new Set();
 
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+    const guildSettings = settings.get_settings(newState.guild.id);
+
     if (!oldState.channelId && newState.channelId) {
-        if (!newState.member.user.bot) activeInVoice.add(newState.id);
+        if (!newState.member.user.bot){
+            activeInVoice.add(newState.id);
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+                    const discordTimestamp = `<t:${Math.floor(date.getTime() / 1000)}:R>`;
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#eeff00')
+                        .setAuthor({ name: "Dołączenie do kanału głosowego", iconURL: "https://images-ext-1.discordapp.net/external/UE-DXFkEkiDwnom0gGoI-uEwcg_sYS1_Yvf9nHXnlGk/%3Fv%3D1/https/cdn.discordapp.com/emojis/679580097690599425.png" })
+                        .setDescription(`Użytkownik <@${newState.member.user.id}> dołączył do ${newState.channel.name}`)
+                        .setFooter({ text: `${discordTimestamp}`, iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
         return;
-    } 
+    }
 
     if (oldState.channelId && !newState.channelId) {
         activeInVoice.delete(oldState.id);
+
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+                    const discordTimestamp = `<t:${Math.floor(date.getTime() / 1000)}:R>`;
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#ff2600')
+                        .setAuthor({ name: "Wyjście z kanału głosowego", iconURL: "https://images-ext-1.discordapp.net/external/SalNla9Auw4bMennd-mhjJnu7OToYAXWYjQ3uIaw06k/%3Fv%3D1/https/cdn.discordapp.com/emojis/679580097497530408.png" })
+                        .setDescription(`Użytkownik <@${newState.member.user.id}> opuścił ${oldState.channel.name}`)
+                        .setFooter({ text: `${discordTimestamp}`, iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
         return;
     }
 });
