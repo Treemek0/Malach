@@ -180,8 +180,9 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         type: AuditLogEvent.MemberDisconnect,
                     });
                     const log = fetchedLogs.entries.first();
-                    console.log(log);
-                    if (log && log.target?.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                    const isCorrectChannel = log.extra?.channel?.id === newState.channelId;
+                    
+                    if (isCorrectChannel) {
                         if (log.executor?.id) executorInfo = `\n**Rozłączony przez:** <@${log.executor.id}>`;
                     }
 
@@ -214,8 +215,9 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         type: AuditLogEvent.MemberMove,
                     });
                     const log = fetchedLogs.entries.first();
-                    console.log(log);
-                    if (log && log.target?.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                    const isCorrectChannel = log.extra?.channel?.id === newState.channelId;
+                    
+                    if (isCorrectChannel) {
                         if (log.executor?.id) executorInfo = `\n**Przeniesiony przez:** <@${log.executor.id}>`;
                     }
 
@@ -257,7 +259,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     }
 
                     const joinEmbed = new EmbedBuilder()
-                        .setColor('#702d67')
+                        .setColor('#51115e')
+                        .setAuthor({ name: `${newState.serverMute ? "Wyciszenie" : "Odciszenie"}`, iconURL: `${newState.serverMute ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_micro.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/micro.png"}` })
                         .setDescription(`<@${newState.member.user.id}> został ${newState.serverMute ? "wyciszony przez " + executor : "odciszony"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
@@ -277,7 +280,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     const date = new Date();
 
                     const joinEmbed = new EmbedBuilder()
-                        .setColor('#e68dda')
+                        .setColor('#868686')
+                        .setAuthor({ name: `${newState.selfMute ? "Wyciszenie" : "Odciszenie"}`, iconURL: `${newState.selfMute ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_micro.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/micro.png"}` })
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfMute ? "wyciszył się" : "odciszył się"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
@@ -312,7 +316,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     }
 
                     const joinEmbed = new EmbedBuilder()
-                        .setColor('#702d67')
+                        .setColor('#51115e')
+                        .setAuthor({ name: `${newState.serverDeaf ? "Wygłuszenie dźwięku" : "Odgłuszenie dźwięku"}`, iconURL: `${newState.serverDeaf ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_hear.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/hear.png"}` })
                         .setDescription(`<@${newState.member.user.id}> został ${newState.serverDeaf ? "wygłuszony przez " + executor : "odgłuszony"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
@@ -332,7 +337,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     const date = new Date();
 
                     const joinEmbed = new EmbedBuilder()
-                        .setColor('#702d67')
+                        .setColor('#868686')
+                        .setAuthor({ name: `${newState.selfDeaf ? "Wygłuszenie dźwięku" : "Odgłuszenie dźwięku"}`, iconURL: `${newState.selfDeaf ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_hear.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/hear.png"}` })
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfDeaf ? "wygłuszył się" : "odgłuszył się"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
@@ -353,6 +359,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#e68dda')
+                        .setAuthor({ name: `${newState.selfVideo ? "Włączenie kamerki" : "Wyłączenie kamerki"}`, iconURL: `${newState.selfVideo ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/cam.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_cam.png"}` })
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfVideo ? "włączył kamerkę" : "wyłączył kamerkę"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
@@ -373,6 +380,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#e68dda')
+                        .setAuthor({ name: `${newState.streaming ? "Rozpoczęcie streamowania" : "Zakończenie streamowania"}`, iconURL: `${newState.streaming ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/stream.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_stream.png"}` })
                         .setDescription(`<@${newState.member.user.id}> ${newState.streaming ? "zaczął streamować" : "zakończył streamować"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
