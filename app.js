@@ -181,7 +181,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     });
                     const log = fetchedLogs.entries.first();
 
-                    if (log && log.target.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                    if (log && log.target.id === newState.id && (Date.now() - log.createdTimestamp) < 5000) {
                         executorInfo = `\n**Rozłączony przez:** <@${log.executor.id}>`;
                     }
 
@@ -208,7 +208,6 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 
                     let executorInfo = "";
 
-                    // Sprawdzamy, czy to moderator przeniósł użytkownika
                     await new Promise(r => setTimeout(r, 600));
                     const fetchedLogs = await newState.guild.fetchAuditLogs({
                         limit: 1,
@@ -216,7 +215,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     });
                     const log = fetchedLogs.entries.first();
 
-                    if (log && log.target.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                    if (log && log.target.id === newState.id && (Date.now() - log.createdTimestamp) < 5000) {
                         executorInfo = `\n**Przeniesiony przez:** <@${log.executor.id}>`;
                     }
 
