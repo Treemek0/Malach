@@ -152,9 +152,9 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#00ff37')
                         .setAuthor({ name: "Dołączenie do kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/join.png" })
-                        .setDescription(`<@${newState.member.user.id}> dołączył do **${newState.channel.name}**`)
+                        .setDescription(`<@${newState.member.user.id}> dołączył do kanału **${newState.channel.name}**`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -175,9 +175,9 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#ff2600')
                         .setAuthor({ name: "Wyjście z kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/left.png" })
-                        .setDescription(`<@${newState.member.user.id}> opuścił **${oldState.channel.name}**`)
+                        .setDescription(`<@${newState.member.user.id}> opuścił kanał **${oldState.channel.name}**`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -196,9 +196,9 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#ffd900')
                         .setAuthor({ name: "Zmiana kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/moving.png" })
-                        .setDescription(`<@${newState.member.user.id}> przeniósł się z **${oldState.channel.name}** do **${newState.channel.name}**`)
+                        .setDescription(`<@${newState.member.user.id}> przeniósł się z kanału **${oldState.channel.name}** do **${newState.channel.name}**`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -234,7 +234,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setColor('#702d67')
                         .setDescription(`<@${newState.member.user.id}> został ${newState.serverMute ? "wyciszony przez " + executor : "odciszony"}.`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -254,7 +254,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setColor('#e68dda')
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfMute ? "wyciszył się" : "odciszył się"}.`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -289,7 +289,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setColor('#702d67')
                         .setDescription(`<@${newState.member.user.id}> został ${newState.serverDeaf ? "wygłuszony przez " + executor : "odgłuszony"}.`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -309,7 +309,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setColor('#702d67')
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfDeaf ? "wygłuszył się" : "odgłuszył się"}.`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -329,7 +329,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setColor('#e68dda')
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfVideo ? "włączył kamerkę" : "wyłączył kamerkę"}.`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -349,7 +349,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setColor('#e68dda')
                         .setDescription(`<@${newState.member.user.id}> ${newState.streaming ? "zaczął streamować" : "zakończył streamować"}.`)
                         .setTimestamp(date)
-                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                        .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
