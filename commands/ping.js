@@ -1,8 +1,10 @@
+const { MessageFlags } = require('discord.js');
+
 module.exports = {
     name: 'ping',
-    description: 'Replies with Pong!',
+    description: 'Sprawdź obecność bota!',
 
     async execute(interaction) {
-        await interaction.reply('🏓 Pong!');
+        await interaction.reply({ content: '🏓 Pong!', flags: [MessageFlags.Ephemeral] });
     },
 };

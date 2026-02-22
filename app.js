@@ -137,20 +137,16 @@ client.on(Events.GuildMemberUpdate, (oldMember, newMember) => {
 
 const activeInVoice = new Set();
 
-client.on(Events.VoiceStateUpdate, (oldState, newState) => {
-    const guildSettings = settings.get_settings(newState.guild.id);
+client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
+    const guildSettings = await settings.get_settings(newState.guild.id);
 
     if (!oldState.channelId && newState.channelId) {
         if (!newState.member.user.bot){
             activeInVoice.add(newState.id);
 
-            console.log(newState.guild.id + " id guild")
-            console.log(guildSettings ? "Guild settings loaded successfully." : "Failed to load guild settings.");
             if(guildSettings && guildSettings.voice_logs_channel) {
-                console.log(colors.blue + `User ${newState.member.user.tag} joined voice channel ${newState.channel.name} in guild ${newState.guild.name}.` + colors.reset);
                 const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
                 if (logChannel) {
-                    console.log(colors.blue + `Logging voice channel join for ${newState.member.user.tag} in channel ${newState.channel.name}.` + colors.reset);
                     const date = new Date();
                     const discordTimestamp = `<t:${Math.floor(date.getTime() / 1000)}:R>`;
 
