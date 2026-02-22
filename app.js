@@ -181,8 +181,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     });
                     const log = fetchedLogs.entries.first();
 
-                    if (log && log.target.id === newState.id && (Date.now() - log.createdTimestamp) < 5000) {
-                        executorInfo = `\n**Rozłączony przez:** <@${log.executor.id}>`;
+                    if (log && log.target?.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                        if (log.executor?.id) executorInfo = `\n**Rozłączony przez:** <@${log.executor.id}>`;
                     }
 
                     const joinEmbed = new EmbedBuilder()
@@ -215,8 +215,8 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                     });
                     const log = fetchedLogs.entries.first();
 
-                    if (log && log.target.id === newState.id && (Date.now() - log.createdTimestamp) < 5000) {
-                        executorInfo = `\n**Przeniesiony przez:** <@${log.executor.id}>`;
+                    if (log && log.target?.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                        if (log.executor?.id) executorInfo = `\n**Przeniesiony przez:** <@${log.executor.id}>`;
                     }
 
                     const joinEmbed = new EmbedBuilder()
