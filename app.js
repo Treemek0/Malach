@@ -151,7 +151,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#00ff37')
-                        .setAuthor({ name: "Dołączenie do kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/join.png" })
+                        .setAuthor({ name: "Dołączenie do kanału głosowego", iconURL: "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/join.png" })
                         .setDescription(`<@${newState.member.user.id}> dołączył do kanału **${newState.channel.name}**`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
@@ -172,10 +172,23 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                 if (logChannel) {
                     const date = new Date();
 
+                    let executorInfo = "";
+
+                    await new Promise(r => setTimeout(r, 500)); // Czekamy na wpis w logach
+                    const fetchedLogs = await newState.guild.fetchAuditLogs({
+                        limit: 1,
+                        type: AuditLogEvent.MemberDisconnect,
+                    });
+                    const log = fetchedLogs.entries.first();
+
+                    if (log && log.target.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                        executorInfo = `\n**Rozłączony przez:** <@${log.executor.id}>`;
+                    }
+
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#ff2600')
-                        .setAuthor({ name: "Wyjście z kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/left.png" })
-                        .setDescription(`<@${newState.member.user.id}> opuścił kanał **${oldState.channel.name}**`)
+                        .setAuthor({ name: "Wyjście z kanału głosowego", iconURL: "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/left.png" })
+                        .setDescription(`<@${newState.member.user.id}> opuścił kanał **${oldState.channel.name}**${executorInfo}`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
@@ -193,10 +206,24 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                 if (logChannel) {
                     const date = new Date();
 
+                    let executorInfo = "";
+
+                    // Sprawdzamy, czy to moderator przeniósł użytkownika
+                    await new Promise(r => setTimeout(r, 600));
+                    const fetchedLogs = await newState.guild.fetchAuditLogs({
+                        limit: 1,
+                        type: AuditLogEvent.MemberMove,
+                    });
+                    const log = fetchedLogs.entries.first();
+
+                    if (log && log.target.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
+                        executorInfo = `\n**Przeniesiony przez:** <@${log.executor.id}>`;
+                    }
+
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#ffd900')
-                        .setAuthor({ name: "Zmiana kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/moving.png" })
-                        .setDescription(`<@${newState.member.user.id}> przeniósł się z kanału **${oldState.channel.name}** do **${newState.channel.name}**`)
+                        .setAuthor({ name: "Zmiana kanału głosowego", iconURL: "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/moving.png" })
+                        .setDescription(`<@${newState.member.user.id}> przeniósł się z kanału **${oldState.channel.name}** do **${newState.channel.name}**${executorInfo}`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
@@ -225,7 +252,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         });
 
                         const log = fetchedLogs.entries.first();
-                        if (log && log.target.id === member.id && log.changes.some(c => c.key === 'mute')) {
+                        if (log && log.target.id === newState.member.user.id && log.changes.some(c => c.key === 'mute')) {
                             executor = log.executor.tag;
                         }
                     }
@@ -280,7 +307,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                             type: AuditLogEvent.MemberUpdate,
                         });
                         const log = fetchedLogs.entries.first();
-                        if (log && log.target.id === member.id && log.changes.some(c => c.key === 'deaf')) {
+                        if (log && log.target.id === newState.member.user.id && log.changes.some(c => c.key === 'deaf')) {
                             executor = log.executor.tag;
                         }
                     }
