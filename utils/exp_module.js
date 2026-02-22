@@ -59,7 +59,7 @@ module.exports = {
 
         console.log(`Added ${xp} XP to user ${user.tag}. Total XP: ${totalXP}`);
 
-        const xpRequiredForNextLevel = this.getTotalXPForLevel(this.xpToLevel(totalXP) + 1);
+        const xpRequiredForNextLevel = this.getTotalXPForLevel(this.xpToLevel(totalXP-xp) + 1);
         if (totalXP >= xpRequiredForNextLevel) {
             const level = this.xpToLevel(totalXP);
             console.log(`User ${user.tag} leveled up to level ${level}!`);
