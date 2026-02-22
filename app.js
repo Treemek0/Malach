@@ -143,9 +143,12 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
     if (!oldState.channelId && newState.channelId) {
         if (!newState.member.user.bot){
             activeInVoice.add(newState.id);
+
             if(guildSettings && guildSettings.voice_logs_channel) {
+                console.log(colors.blue + `User ${newState.member.user.tag} joined voice channel ${newState.channel.name} in guild ${newState.guild.name}.` + colors.reset);
                 const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
                 if (logChannel) {
+                    console.log(colors.blue + `Logging voice channel join for ${newState.member.user.tag} in channel ${newState.channel.name}.` + colors.reset);
                     const date = new Date();
                     const discordTimestamp = `<t:${Math.floor(date.getTime() / 1000)}:R>`;
 
