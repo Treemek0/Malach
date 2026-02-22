@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Events, Collection, EmbedBuilder, ChannelType } = require('discord.js');
+const { Client, GatewayIntentBits, Events, Collection, EmbedBuilder, ChannelType, AuditLogEvent} = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const colors = require('./colors');
@@ -148,13 +148,13 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                 const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
                 if (logChannel) {
                     const date = new Date();
-                    const discordTimestamp = `<t:${Math.floor(date.getTime() / 1000)}:R>`;
 
                     const joinEmbed = new EmbedBuilder()
-                        .setColor('#eeff00')
-                        .setAuthor({ name: "Dołączenie do kanału głosowego", iconURL: "https://images-ext-1.discordapp.net/external/UE-DXFkEkiDwnom0gGoI-uEwcg_sYS1_Yvf9nHXnlGk/%3Fv%3D1/https/cdn.discordapp.com/emojis/679580097690599425.png" })
-                        .setDescription(`Użytkownik <@${newState.member.user.id}> dołączył do ${newState.channel.name}`)
-                        .setFooter({ text: `${discordTimestamp}`, iconURL: newState.member.user.displayAvatarURL() });
+                        .setColor('#00ff37')
+                        .setAuthor({ name: "Dołączenie do kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/join.png" })
+                        .setDescription(`<@${newState.member.user.id}> dołączył do **${newState.channel.name}**`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -171,13 +171,185 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                 const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
                 if (logChannel) {
                     const date = new Date();
-                    const discordTimestamp = `<t:${Math.floor(date.getTime() / 1000)}:R>`;
 
                     const joinEmbed = new EmbedBuilder()
                         .setColor('#ff2600')
-                        .setAuthor({ name: "Wyjście z kanału głosowego", iconURL: "https://images-ext-1.discordapp.net/external/SalNla9Auw4bMennd-mhjJnu7OToYAXWYjQ3uIaw06k/%3Fv%3D1/https/cdn.discordapp.com/emojis/679580097497530408.png" })
-                        .setDescription(`Użytkownik <@${newState.member.user.id}> opuścił ${oldState.channel.name}`)
-                        .setFooter({ text: `${discordTimestamp}`, iconURL: newState.member.user.displayAvatarURL() });
+                        .setAuthor({ name: "Wyjście z kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/left.png" })
+                        .setDescription(`<@${newState.member.user.id}> opuścił **${oldState.channel.name}**`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#ffd900')
+                        .setAuthor({ name: "Zmiana kanału głosowego", iconURL: "https://github.com/Treemek0/Malach/blob/main/imgs/moving.png" })
+                        .setDescription(`<@${newState.member.user.id}> przeniósł się z **${oldState.channel.name}** do **${newState.channel.name}**`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.serverMute !== newState.serverMute) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    let executor = "⊘";
+        
+                    if (newState.serverMute) {
+                        await new Promise(r => setTimeout(r, 500));
+
+                        const fetchedLogs = await newState.guild.fetchAuditLogs({
+                            limit: 1,
+                            type: AuditLogEvent.MemberUpdate,
+                        });
+
+                        const log = fetchedLogs.entries.first();
+                        if (log && log.target.id === member.id && log.changes.some(c => c.key === 'mute')) {
+                            executor = log.executor.tag;
+                        }
+                    }
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#702d67')
+                        .setDescription(`<@${newState.member.user.id}> został ${newState.serverMute ? "wyciszony przez " + executor : "odciszony"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.selfMute !== newState.selfMute) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#e68dda')
+                        .setDescription(`<@${newState.member.user.id}> ${newState.selfMute ? "wyciszył się" : "odciszył się"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.serverDeaf !== newState.serverDeaf) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    let executor = "⊘";
+
+                    if (newState.serverDeaf) {
+                        await new Promise(r => setTimeout(r, 500));
+
+                        const fetchedLogs = await newState.guild.fetchAuditLogs({
+                            limit: 1,
+                            type: AuditLogEvent.MemberUpdate,
+                        });
+                        const log = fetchedLogs.entries.first();
+                        if (log && log.target.id === member.id && log.changes.some(c => c.key === 'deaf')) {
+                            executor = log.executor.tag;
+                        }
+                    }
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#702d67')
+                        .setDescription(`<@${newState.member.user.id}> został ${newState.serverDeaf ? "wygłuszony przez " + executor : "odgłuszony"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.selfDeaf !== newState.selfDeaf) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#702d67')
+                        .setDescription(`<@${newState.member.user.id}> ${newState.selfDeaf ? "wygłuszył się" : "odgłuszył się"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.selfVideo !== newState.selfVideo) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#e68dda')
+                        .setDescription(`<@${newState.member.user.id}> ${newState.selfVideo ? "włączył kamerkę" : "wyłączył kamerkę"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.streaming !== newState.streaming) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#e68dda')
+                        .setDescription(`<@${newState.member.user.id}> ${newState.streaming ? "zaczął streamować" : "zakończył streamować"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ iconURL: newState.member.user.displayAvatarURL() });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
@@ -196,7 +368,7 @@ setInterval(async () => {
             friendshipUtils.handleTalking(state.member.user, state.channel);
 
             if (state.channel.members.filter(m => !m.user.bot).size > 1) { 
-                if (state.mute || state.selfMute || state.deaf || state.serverDeaf) return;
+                if (state.serverMute || state.selfMute || state.selfDeaf || state.serverDeaf) return;
                 const guildSettings = await settings.get_settings(guild.id);
                 const xpPerHalfMinute = guildSettings.xp_per_voice_minute/2 || 0.5;
                 expModule.add_xp(state.member.user, state.guild, xpPerHalfMinute, guildSettings);
