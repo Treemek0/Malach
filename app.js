@@ -144,7 +144,8 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
         if (!newState.member.user.bot){
             activeInVoice.add(newState.id);
 
-            console.log(guildSettings && guildSettings.voice_logs_channel ? colors.blue + `User ${newState.member.user.tag} joined voice channel ${newState.channel.name} in guild ${newState.guild.name}.` + colors.reset : colors.yellow + `User ${newState.member.user.tag} joined a voice channel, but voice logging is not set up for guild ${newState.guild.name}.` + colors.reset);
+            console.log(newState.guild.id + " id guild")
+            console.log(guildSettings ? "Guild settings loaded successfully." : "Failed to load guild settings.");
             if(guildSettings && guildSettings.voice_logs_channel) {
                 console.log(colors.blue + `User ${newState.member.user.tag} joined voice channel ${newState.channel.name} in guild ${newState.guild.name}.` + colors.reset);
                 const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
