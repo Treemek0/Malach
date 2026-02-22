@@ -44,11 +44,11 @@ module.exports = {
     async handleTalking(user, channel){
         const members = channel.members.filter(m => !m.user.bot);
 
-        if(user.deaf || user.serverDeaf) return;
+        if(user.selfDeaf || user.serverDeaf) return;
         let wasSomeone = false;
         for (const member of members.values()) {
             if (member.id !== user.id) {
-                if(member.mute || member.selfMute || member.deaf) continue;
+                if(member.mute || member.selfMute || member.selfDeaf) continue;
                 streakModule.addStreak(channel.guild, user, member.user);
                 this.addScore(0.25, user, member.user, channel.guild, 'voice');
                 wasSomeone = true;
