@@ -18,11 +18,12 @@ module.exports = {
             const user = interaction.options.getUser('user') || interaction.user;
             const xp = await exp_module.get_xp(user, interaction.guild);
             const level = exp_module.xpToLevel ? exp_module.xpToLevel(xp) : exp_module.get_level(user, interaction.guild); // backwards compatibility
-            const xpToNextLevel = exp_module.getTotalXPForLevel(level + 1) - xp;
+            const xpForNextLevel = exp_module.getTotalXPForLevel(level + 1);
+            const xpToNextLevel = xpForNextLevel - xp;
 
             const full = '█';
             const empty = '░';
-            const progress = Math.round((xp / xpToNextLevel) * 20);
+            const progress = Math.round((xp / xpForNextLevel) * 20);
             const progressBar = "|" + full.repeat(progress) + empty.repeat(20 - progress) + "|";
 
             const warningEmbed = new EmbedBuilder()

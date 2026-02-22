@@ -70,13 +70,25 @@ module.exports = {
 
             if(guildSettings){
                 if(guildSettings.level_reward_roles) {
-                    const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level);
-                    for (const reward of rewardRoles) {
-                        const role = guild.roles.cache.get(reward.role_id);
-                        if (role) {
-                            await member.roles.add(role);
-                            assignedRoles.push(role);
-                            console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
+                    const rewardRoles = guildSettings.level_reward_roles.filter(r => r.level <= level).sort((a, b) => b.level - a.level);
+
+                    if (rewardRoles.length > 0){
+                        const lastRoleLevel = rewardRoles[0].level;
+                        for (let i = 0; i < rewardRoles.length; i++) {
+                            const reward = rewardRoles[i];
+                            const role = guild.roles.cache.get(reward.role_id);
+
+                            if (reward.level < lastRoleLevel) { // jest mniejszym levelem nie najwyzszym mozliwym
+                                if (role) {
+                                    await member.roles.remove(role);
+                                }
+                            }else{
+                                if (role) {
+                                    await member.roles.add(role);
+                                    assignedRoles.push(role);
+                                    console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
+                                }
+                            }
                         }
                     }
                 }
