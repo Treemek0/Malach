@@ -239,6 +239,61 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         return;
     }
 
+    if (oldState.serverDeaf !== newState.serverDeaf) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    let executor = "⊘";
+
+                    if (newState.serverDeaf) {
+                        await new Promise(r => setTimeout(r, 500));
+
+                        const fetchedLogs = await newState.guild.fetchAuditLogs({
+                            limit: 1,
+                            type: AuditLogEvent.MemberUpdate,
+                        });
+                        const log = fetchedLogs.entries.first();
+                        if (log && log.target.id === newState.member.user.id && log.changes.some(c => c.key === 'deaf')) {
+                            executor = log.executor.tag;
+                        }
+                    }
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#51115e')
+                        .setDescription(`<@${newState.member.user.id}> został ${newState.serverDeaf ? "wygłuszony przez " + executor : "odgłuszony"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ text: newState.member.user.tag, iconURL: `${newState.serverDeaf ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_hear.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/hear.png"}` });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (oldState.selfDeaf !== newState.selfDeaf) {
+        if (!newState.member.user.bot){
+            if(guildSettings && guildSettings.voice_logs_channel) {
+                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
+                if (logChannel) {
+                    const date = new Date();
+
+                    const joinEmbed = new EmbedBuilder()
+                        .setColor('#868686')
+                        .setDescription(`<@${newState.member.user.id}> ${newState.selfDeaf ? "wygłuszył się" : "odgłuszył się"}.`)
+                        .setTimestamp(date)
+                        .setFooter({ text: newState.member.user.tag, iconURL: `${newState.selfDeaf ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_hear.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/hear.png"}` });
+                    logChannel.send({ embeds: [joinEmbed] });
+                }
+            }
+        }
+
+        return;
+    }
+
     if (oldState.serverMute !== newState.serverMute) {
         if (!newState.member.user.bot){
             if(guildSettings && guildSettings.voice_logs_channel) {
@@ -287,61 +342,6 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         .setDescription(`<@${newState.member.user.id}> ${newState.selfMute ? "wyciszył się" : "odciszył się"}.`)
                         .setTimestamp(date)
                         .setFooter({ text: newState.member.user.tag, iconURL: `${newState.selfMute ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_micro.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/micro.png"}` });
-                    logChannel.send({ embeds: [joinEmbed] });
-                }
-            }
-        }
-
-        return;
-    }
-
-    if (oldState.serverDeaf !== newState.serverDeaf) {
-        if (!newState.member.user.bot){
-            if(guildSettings && guildSettings.voice_logs_channel) {
-                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
-                if (logChannel) {
-                    const date = new Date();
-
-                    let executor = "⊘";
-
-                    if (newState.serverDeaf) {
-                        await new Promise(r => setTimeout(r, 500));
-
-                        const fetchedLogs = await newState.guild.fetchAuditLogs({
-                            limit: 1,
-                            type: AuditLogEvent.MemberUpdate,
-                        });
-                        const log = fetchedLogs.entries.first();
-                        if (log && log.target.id === newState.member.user.id && log.changes.some(c => c.key === 'deaf')) {
-                            executor = log.executor.tag;
-                        }
-                    }
-
-                    const joinEmbed = new EmbedBuilder()
-                        .setColor('#51115e')
-                        .setDescription(`<@${newState.member.user.id}> został ${newState.serverDeaf ? "wygłuszony przez " + executor : "odgłuszony"}.`)
-                        .setTimestamp(date)
-                        .setFooter({ text: newState.member.user.tag, iconURL: `${newState.serverDeaf ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_hear.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/hear.png"}` });
-                    logChannel.send({ embeds: [joinEmbed] });
-                }
-            }
-        }
-
-        return;
-    }
-
-    if (oldState.selfDeaf !== newState.selfDeaf) {
-        if (!newState.member.user.bot){
-            if(guildSettings && guildSettings.voice_logs_channel) {
-                const logChannel = newState.guild.channels.cache.get(guildSettings.voice_logs_channel);
-                if (logChannel) {
-                    const date = new Date();
-
-                    const joinEmbed = new EmbedBuilder()
-                        .setColor('#868686')
-                        .setDescription(`<@${newState.member.user.id}> ${newState.selfDeaf ? "wygłuszył się" : "odgłuszył się"}.`)
-                        .setTimestamp(date)
-                        .setFooter({ text: newState.member.user.tag, iconURL: `${newState.selfDeaf ? "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/no_hear.png" : "https://raw.githubusercontent.com/Treemek0/Malach/main/imgs/hear.png"}` });
                     logChannel.send({ embeds: [joinEmbed] });
                 }
             }
