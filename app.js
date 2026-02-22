@@ -412,6 +412,7 @@ setInterval(async () => {
 
     for (const [guildId, guild] of client.guilds.cache) {
         console.log(colors.blue + `Checking mutes for guild ${guild.name} (${guildId})...` + colors.reset);
+        
         // find expired mutes in database
         const col = await db.collection('mutes');
         const now = new Date();
@@ -438,7 +439,7 @@ setInterval(async () => {
                             .setColor('#634700')
                             .setTitle(`Użytkownik ${member.user.tag} został automatycznie odciszony!`)
                             .setThumbnail(member.user.displayAvatarURL())
-                            .setDescription("Powód: Czas trwania wyciszenia dobiegł końca.");
+                            .setDescription("Czas trwania wyciszenia dobiegł końca.");
 
                         logChannel.send({ embeds: [unmuteEmbed] });
                     }

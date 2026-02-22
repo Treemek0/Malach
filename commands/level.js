@@ -24,6 +24,7 @@ module.exports = {
                     .setColor('Yellow')
                     .setTitle(`${user.username}`)
                     .setDescription(`-# Ogólne XP: **${Math.round(xp)}**\n\n-# Poziom: **${level}**\n-# XP do następnego poziomu: **${Math.round(xpToNextLevel)}**`)
+                    .setFooter({ text: 'XP zdobywa się poprzez aktywność na serwerze!'})
                     .setThumbnail(user.displayAvatarURL());
 
             interaction.reply({ embeds: [warningEmbed] });
