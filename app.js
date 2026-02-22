@@ -180,7 +180,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         type: AuditLogEvent.MemberDisconnect,
                     });
                     const log = fetchedLogs.entries.first();
-
+                    console.log(log);
                     if (log && log.target?.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
                         if (log.executor?.id) executorInfo = `\n**Rozłączony przez:** <@${log.executor.id}>`;
                     }
@@ -214,7 +214,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
                         type: AuditLogEvent.MemberMove,
                     });
                     const log = fetchedLogs.entries.first();
-
+                    console.log(log);
                     if (log && log.target?.id === newState.member.user.id && (Date.now() - log.createdTimestamp) < 5000) {
                         if (log.executor?.id) executorInfo = `\n**Przeniesiony przez:** <@${log.executor.id}>`;
                     }
