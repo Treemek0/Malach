@@ -75,7 +75,7 @@ module.exports = {
             .setColor('Blue')
             .setDescription(`## Obliczanie jak bardzo **<@${user.id}>** i **${user2 ? "<@" + user2.id + ">": text}** do siebie pasują...`)
 
-        interaction.reply({ embeds: [searchingEmbed] });
+        const msg = await interaction.reply({ embeds: [searchingEmbed], fetchReply: true});
 
         let emoji = "💔"
         let color = "#d4d4d4"
@@ -111,13 +111,15 @@ module.exports = {
 
         setTimeout(async () => {
             try {
-                await interaction.deleteReply();
-
-                await interaction.followUp({ 
-                    embeds: [shipEmbed] 
-                });
+                await msg.delete();
             } catch (error) {
-                console.error("Nie udało się edytować wiadomości:", error);
+                console.error("Nie udało się usunac wiadomości:", error);
+            }
+
+            try {
+                await interaction.channel.send({ embeds: [shipEmbed] });
+            } catch (error) {
+                console.error("Nie udało się wysłać wiadomości:", error);
             }
         }, 500);
     }
