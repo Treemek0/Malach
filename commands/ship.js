@@ -56,13 +56,14 @@ module.exports = {
 
         const searchingEmbed = new EmbedBuilder()
             .setColor('Blue')
-            .setTitle(`Obliczanie jak bardzo <@${user.id}> i <@${user2.id}> do siebie pasują...`)
+            .setDescription(`## Obliczanie jak bardzo <@${user.id}> i <@${user2.id}> do siebie pasują...`)
 
         interaction.reply({ embeds: [searchingEmbed] });
 
         let emoji = "💔"
         let color = "#d4d4d4"
         let footer = "Ajajaj, chyba nic z tego nie będzie"
+
         if(randomShip > 25){
             emoji = "🤜🤛"
             color = "#ddd172"
@@ -88,8 +89,7 @@ module.exports = {
 
         const shipEmbed = new EmbedBuilder()
             .setColor(color)
-            .setTitle(`<@${user.id}> ${emoji} <@${user2.id}>`)
-            .setDescription("${progressBar}\n${randomShip}%")
+            .setDescription(`## <@${user.id}> ${emoji} <@${user2.id}>` + `\n\n${progressBar}\n${randomShip}%`)
             .setFooter({ text: `${footer}` });
 
         setTimeout(async () => {
@@ -101,6 +101,6 @@ module.exports = {
             } catch (error) {
                 console.error("Nie udało się edytować wiadomości:", error);
             }
-        }, 1000);
+        }, 500);
     }
 }
