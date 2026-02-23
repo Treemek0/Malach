@@ -20,7 +20,7 @@ module.exports = {
             required: false,
         },
         {
-            name: 'user2 - tekst',
+            name: 'tekst',
             description: 'Użytkownik shipowany - tekst',
             type: 3, // 3 = STRING
             required: false,
