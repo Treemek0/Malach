@@ -31,7 +31,7 @@ module.exports = {
     async execute(interaction) {
         const user = interaction.options.getUser('user');
         const user2 = interaction.options.getUser('user2');
-        const text = interaction.options.getString('user2 - tekst');
+        const text = interaction.options.getString('tekst');
 
         if(!user2 && !text) return interaction.reply({ content: 'Podaj osobe do shipowania.', flags: [MessageFlags.Ephemeral] });
 
