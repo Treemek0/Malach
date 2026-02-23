@@ -32,80 +32,88 @@ module.exports = {
     async add_xp(user, guild, xp, guildSettings) {
         if (user.bot) return;
 
-        const member = await guild.members.fetch(user.id).catch(() => null);
-        if (!member) return;
+        try {
+            const member = await guild.members.fetch(user.id).catch(() => null);
+            if (!member) return;
 
-        if (guildSettings && guildSettings.xp_blacklist) {
-            if (member.roles.cache.some(role => guildSettings.xp_blacklist.includes(role.id))) {
-                return; // Do not add XP if user is in the blacklist
-            }
+            if (guildSettings && guildSettings.xp_blacklist) {
+                if (member.roles.cache.some(role => guildSettings.xp_blacklist.includes(role.id))) {
+                    return; // Do not add XP if user is in the blacklist
+                }
 
-            if(guildSettings.xp_whitelist.length > 0 && !member.roles.cache.some(role => guildSettings.xp_whitelist.includes(role.id))) {
-                return; // Do not add XP if user is not in the whitelist
-            }
-        }
-
-        const col = await db.collection('xp');
-        const filter = { guildId: guild.id };
-        
-        // Use $inc with Dot Notation: users.USER_ID
-        const update = { $inc: { [`users.${user.id}`]: xp } };
-        const opts = { upsert: true, returnDocument: 'after' };
-        
-        const result = await col.findOneAndUpdate(filter, update, opts);
-        
-        const doc = result.value || result;
-
-        // Access the XP from the nested object
-        const totalXP = doc.users[user.id];
-
-        console.log(`Added ${xp} XP to user ${user.tag}. Total XP: ${totalXP}`);
-
-        const levelBeforeAdding = this.xpToLevel(totalXP - xp);
-        const level = this.xpToLevel(totalXP);
-        if (level > levelBeforeAdding) {
-            console.log(`User ${user.tag} leveled up to level ${level}!`);
-            
-            const assignedRoles = this.set_roles_for_level(guild, guildSettings, member, level);
-
-            if (guildSettings.lvlup_channel) {
-                const channel = guild.channels.cache.get(guildSettings.lvlup_channel);
-                if (channel) {
-                    if(assignedRoles.length > 0) {
-                        const assignedRoleNames = assignedRoles.map(role => role.name).join(', ');
-                        var description = `Zdobył **${level}** poziom!\n-# Przydzielone role: ${assignedRoleNames}`;
-                    } else {
-                        var description = `Zdobył **${level}** poziom!`;
-                    }
-
-                    const lvlupEmbed = new EmbedBuilder()
-                        .setColor('Green')
-                        .setTitle(`Użytkownik ${user.username} osiągnął nowy poziom!`)
-                        .setThumbnail(user.displayAvatarURL())
-                        .setDescription(description);
-                    channel.send({ embeds: [lvlupEmbed] });
+                if(guildSettings.xp_whitelist.length > 0 && !member.roles.cache.some(role => guildSettings.xp_whitelist.includes(role.id))) {
+                    return; // Do not add XP if user is not in the whitelist
                 }
             }
+
+            const col = await db.collection('xp');
+            const filter = { guildId: guild.id };
+            
+            // Use $inc with Dot Notation: users.USER_ID
+            const update = { $inc: { [`users.${user.id}`]: xp } };
+            const opts = { upsert: true, returnDocument: 'after' };
+            
+            const result = await col.findOneAndUpdate(filter, update, opts);
+            
+            const doc = result.value || result;
+
+            // Access the XP from the nested object
+            const totalXP = doc.users[user.id];
+
+            console.log(`Added ${xp} XP to user ${user.tag}. Total XP: ${totalXP}`);
+
+            const levelBeforeAdding = this.xpToLevel(totalXP - xp);
+            const level = this.xpToLevel(totalXP);
+            if (level > levelBeforeAdding) {
+                console.log(`User ${user.tag} leveled up to level ${level}!`);
+                
+                const assignedRoles = this.set_roles_for_level(guild, guildSettings, member, level);
+
+                if (guildSettings.lvlup_channel) {
+                    const channel = guild.channels.cache.get(guildSettings.lvlup_channel);
+                    if (channel) {
+                        if(assignedRoles.length > 0) {
+                            const assignedRoleNames = assignedRoles.map(role => role.name).join(', ');
+                            var description = `Zdobył **${level}** poziom!\n-# Przydzielone role: ${assignedRoleNames}`;
+                        } else {
+                            var description = `Zdobył **${level}** poziom!`;
+                        }
+
+                        const lvlupEmbed = new EmbedBuilder()
+                            .setColor('Green')
+                            .setTitle(`Użytkownik ${user.username} osiągnął nowy poziom!`)
+                            .setThumbnail(user.displayAvatarURL())
+                            .setDescription(description);
+                        channel.send({ embeds: [lvlupEmbed] });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error adding XP:', error);
         }
-        
     },
 
     async set_xp(user, guild, xp) {
         if (user.bot) return;
-        const col = await db.collection('xp');
 
-        await col.updateOne(
-            { guildId: guild.id }, 
-            { $set: { [`users.${user.id}`]: xp } }, 
-            { upsert: true }
-        );
+        try {
+            const col = await db.collection('xp');
 
-        console.log(`Set ${xp} XP to user ${user.tag}.`);
-        const guildSettings = await settings.get_settings(guild.id);
+            await col.updateOne(
+                { guildId: guild.id }, 
+                { $set: { [`users.${user.id}`]: xp } }, 
+                { upsert: true }
+            );
 
-        const level = this.xpToLevel(xp);
+            console.log(`Set ${xp} XP to user ${user.tag}.`);
+            const guildSettings = await settings.get_settings(guild.id);
 
-        this.set_roles_for_level(guild, guildSettings, user, level);
+            const level = this.xpToLevel(xp);
+
+            this.set_roles_for_level(guild, guildSettings, user, level);
+        } catch (error) {
+            console.error('Error setting XP:', error);
+        }
     },
 
     async set_roles_for_level(guild, guildSettings, member, level){

@@ -42,7 +42,7 @@ module.exports = {
         try {
             const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
 
-            const messages = await channel.messages.fetch({ limit: limit + 1 });
+            const messages = await channel.messages.fetch({ limit: limit });
             const messagesToDelete = messages.filter(m => {
                 const isRecent = m.createdTimestamp > fourteenDaysAgo;
                 const isUserMatch = user ? m.author.id === user.id : true;

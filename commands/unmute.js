@@ -40,6 +40,11 @@ module.exports = {
             .setDescription('Powód: ' + reason);
 
         interaction.reply({ embeds: [muteEmbed] });
+
+        if (guildSettings.moderation_logs_channel) {
+            const logChannel = interaction.guild.channels.cache.get(guildSettings.moderation_logs_channel);
+            if (logChannel) logChannel.send({ embeds: [muteEmbed] });
+        }
     },
 
     async unmute(userId, guild) {
