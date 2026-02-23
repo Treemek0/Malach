@@ -64,14 +64,16 @@ module.exports = {
         let randomShip = baseShip + dailyMod;
         randomShip = Math.max(1, Math.min(100, randomShip));
 
-        const riggedIDs = ['534819684248322048', '802495872340328469'];
-        if (riggedIDs.includes(user.id) && riggedIDs.includes(user2.id)) {
-            randomShip = 22 + dailyMod; 
+        if(user2){
+            const riggedIDs = ['534819684248322048', '802495872340328469'];
+            if (riggedIDs.includes(user.id) && riggedIDs.includes(user2.id)) {
+                randomShip = 22 + dailyMod; 
+            }
         }
 
         const searchingEmbed = new EmbedBuilder()
             .setColor('Blue')
-            .setDescription(`## Obliczanie jak bardzo <@${user.id}> i <@${user2.id}> do siebie pasują...`)
+            .setDescription(`## Obliczanie jak bardzo **<@${user.id}>** i **${user2 ? "<@" + user2.id + ">": text}** do siebie pasują...`)
 
         interaction.reply({ embeds: [searchingEmbed] });
 
@@ -104,7 +106,7 @@ module.exports = {
 
         const shipEmbed = new EmbedBuilder()
             .setColor(color)
-            .setDescription(`## <@${user.id}> ${emoji} <@${user2.id}>` + `\n\n${progressBar}\n${randomShip}%`)
+            .setDescription(`## **<@${user.id}>** ${emoji} **${user2 ? "<@" + user2.id + ">": text}**` + `\n\n${progressBar}\n${randomShip}%`)
             .setFooter({ text: `${footer}` });
 
         setTimeout(async () => {
