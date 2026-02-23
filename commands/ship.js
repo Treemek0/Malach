@@ -5,17 +5,17 @@ const settings = require('../utils/settings.js');
 
 module.exports = {
     name: 'ship',
-    description: 'Zobacz jak bardzo użytkownicy się kosiają <333',
+    description: 'Zobacz jak bardzo użytkownicy się kochają <333',
     options: [
         {
             name: 'user',
-            description: 'Użytkownik, którego chcesz zbanować',
+            description: 'Użytkownik, którego chcesz shipować',
             type: 6, // 6 = USER
             required: true,
         },
         {
             name: 'user2',
-            description: 'Użytkownik, którego chcesz zbanować',
+            description: 'Użytkownik shipowany',
             type: 6, // 6 = USER
             required: true,
         }
@@ -61,19 +61,23 @@ module.exports = {
         interaction.reply({ embeds: [searchingEmbed] });
 
         let emoji = "💔"
+        let color = "#d4d4d4"
         let footer = "Ajajaj, chyba nic z tego nie będzie"
         if(randomShip > 25){
             emoji = "🤜🤛"
+            color = "#ddd172"
             footer = "Nadajecie się na znajomych"    
         }
 
         if(randomShip > 60){
             emoji = "🤝"
+            color = "#e7cd09"
             footer = "Powinniście być przyjaciółmi"
         }
 
         if(randomShip > 85) {
             emoji = "💞"
+            color = "#e32098"
             footer = "Jeżeli nie jesteście razem to dużo tracicie"
         }
 
@@ -83,7 +87,7 @@ module.exports = {
         const progressBar = "|" + full.repeat(progress) + empty.repeat(15 - progress) + "|";
 
         const shipEmbed = new EmbedBuilder()
-            .setColor('Pink')
+            .setColor(color)
             .setTitle(`<@${user.id}> ${emoji} <@${user2.id}>`)
             .setDescription("${progressBar}\n${randomShip}%")
             .setFooter({ text: `${footer}` });
