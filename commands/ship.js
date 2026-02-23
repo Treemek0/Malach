@@ -17,7 +17,13 @@ module.exports = {
             name: 'user2',
             description: 'Użytkownik shipowany',
             type: 6, // 6 = USER
-            required: true,
+            required: false,
+        },
+        {
+            name: 'user2 - tekst',
+            description: 'Użytkownik shipowany - tekst',
+            type: 3, // 3 = STRING
+            required: false,
         }
     ],
 
@@ -25,9 +31,18 @@ module.exports = {
     async execute(interaction) {
         const user = interaction.options.getUser('user');
         const user2 = interaction.options.getUser('user2');
+        const text = interaction.options.getString('user2 - tekst');
 
-        const ids = [user.id, user2.id].sort();
-        const idSeed = ids.join("");
+        if(!user2 && !text) return interaction.reply({ content: 'Podaj osobe do shipowania.', flags: [MessageFlags.Ephemeral] });
+
+        let idSeed = "";
+
+        if(user2) {
+            const ids = [user.id, user2.id].sort();
+            idSeed = ids.join("");
+        }else {
+            idSeed = user.id + text;
+        }
 
         const now = new Date();
         const dateSeed = `${now.getFullYear()}${now.getMonth()}${now.getDate()}`;
@@ -94,8 +109,9 @@ module.exports = {
 
         setTimeout(async () => {
             try {
-                await interaction.editReply({ 
-                    content: "", 
+                await interaction.deleteReply();
+
+                await interaction.followUp({ 
                     embeds: [shipEmbed] 
                 });
             } catch (error) {
