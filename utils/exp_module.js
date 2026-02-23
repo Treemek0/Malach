@@ -130,7 +130,7 @@ module.exports = {
                                 if(!member.roles.cache.has(role.id)){ // nie ma roli
                                     await member.roles.add(role);
                                     assignedRoles.push(role);
-                                    console.log(`Assigned role ${role.name} to user ${user.tag} for reaching level ${level}.`);
+                                    console.log(`Assigned role ${role.name} to user ${member.user.tag} for reaching level ${level}.`);
                                 }
                             }
                         }
