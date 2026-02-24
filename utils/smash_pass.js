@@ -1,17 +1,18 @@
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 module.exports = {
-    async generateImage(channel) {
+    async generateImage(interaction) {
         try {
-            const imageUrl = await this.getRedditImage(channel.allowNSFW);
-            if (!imageUrl) return channel.send("Nie udało się znaleźć obrazka na Reddit");
+            const imageUrl = await this.getRedditImage(interaction.channel.allowNSFW);
+            if (!imageUrl) return interaction.reply("Nie udało się znaleźć obrazka");
 
             const imageEmbed = new EmbedBuilder()
                 .setImage(imageUrl)
                 .setColor('Random');
 
-            const msg = await channel.send({ 
-                embeds: [imageEmbed] 
+            const msg = await interaction.reply({ 
+                embeds: [imageEmbed], 
+                fetchReply: true 
             });
 
             await msg.react('🔥');
@@ -19,39 +20,55 @@ module.exports = {
 
         } catch (error) {
             console.error('Błąd w generateImage:', error);
-            await channel.send("Nie udało się wygenerować nowej osoby. Spróbuj ponownie!");
+            await channel.send("Wystąpił błąd podczas pobierania obrazu.");
         }
     },
 
     async getRedditImage(allowNSFW) {
-        try {
-            const limit = 15;
+    try {
+        const limit = 50;
+        const hot_or_new = Math.random() < 0.5 ? 'hot' : 'new';
 
-            const links = [`https://www.reddit.com/r/selfie/new.json?limit=${limit}`, `https://www.reddit.com/r/selfies/new.json?limit=${limit}`, `https://www.reddit.com/r/PrettyGirls/new.json?limit=${limit}`, `https://www.reddit.com/r/Animewallpaper/new.json?limit=${limit}`];
+        const links = [
+            `https://www.reddit.com/r/selfie/${hot_or_new}.json?limit=${limit}`,
+            `https://www.reddit.com/r/selfies/${hot_or_new}.json?limit=${limit}`,
+            `https://www.reddit.com/r/PrettyGirls/${hot_or_new}.json?limit=${limit}`,
+            `https://www.reddit.com/r/BeautifulFemales/${hot_or_new}.json?limit=${limit}`,
+            `https://www.reddit.com/r/SFWNextDoorGirls/${hot_or_new}.json?limit=${limit}`,
+            `https://www.reddit.com/r/LadyBoners/${hot_or_new}.json?limit=${limit}`,
+        ];
 
-            const randomLink = links[Math.floor(Math.random() * links.length)];
+        const randomLink = links[Math.floor(Math.random() * links.length)];
 
-            const response = await fetch(randomLink, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64' }
-            });
+        const response = await fetch(randomLink, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+        });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            const allowed = data.data.children.filter(post => 
-                !post.data.is_video && 
-                post.data.post_hint === 'image' &&
-                allowNSFW ? true : !post.data.over_18 &&
-                (post.data.url.endsWith('.jpg') || post.data.url.endsWith('.png'))
-            );
+        if (!data.data || !data.data.children) return null;
 
-            if (allowed.length === 0) return null;
+        const allowed = data.data.children.filter(post => {
+            const p = post.data;
+            
+            const isImage = p.url.match(/\.(jpg|jpeg|png|gif)$/i) || p.post_hint === 'image';
+            const isNotVideo = !p.is_video;
 
-            const random = Math.floor(Math.random() * allowed.length);
+            const nsfwCheck = allowNSFW ? true : !p.over_18;
 
-            return allowed[random].data.url;
-        } catch (error) {
-            console.error('Błąd podczas pobierania z Reddita:', error);
+            return isImage && isNotVideo && nsfwCheck;
+        });
+
+        if (allowed.length === 0) {
+            console.log(`Brak pasujących postów na: ${randomLink}`);
             return null;
         }
+
+        const random = Math.floor(Math.random() * allowed.length);
+        return allowed[random].data.url;
+    } catch (error) {
+        console.error('Błąd podczas pobierania z Reddita:', error);
+        return null;
     }
+}
 }

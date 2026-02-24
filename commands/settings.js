@@ -48,6 +48,14 @@ module.exports = {
             ],
         },
         {
+            name: 'smash_or_pass_channel',
+            description: 'Ustaw kanał raportów',
+            type: ApplicationCommandOptionType.Subcommand,
+            options: [
+                { name: 'channel', description: 'Kanał do smash or pass', type: ApplicationCommandOptionType.Channel, required: false }
+            ],
+        },
+        {
             name: 'mute_role',
             description: 'Ustaw rolę wyciszenia',
             type: ApplicationCommandOptionType.Subcommand,
@@ -117,6 +125,12 @@ module.exports = {
                 const channel = interaction.options.getChannel('channel') || null;
                 guildSettings.report_channel = channel ? channel.id : null;
                 response = `Kanał zgłoszeń został ustawiony na ${channel ? channel : 'brak'}.`;
+                break;
+            }
+            case 'smash_or_pass_channel': {
+                const channel = interaction.options.getChannel('channel') || null;
+                guildSettings.smashOrPass_channel = channel ? channel.id : null;
+                response = `${channel ? "Whitelista smash or pass została ustawiona tylko na " + channel  : 'Usunięto whiteliste smash or pass, komenda możliwa do aktywacji gdziekolwiek.'}.`;
                 break;
             }
             case 'mute_role': {
