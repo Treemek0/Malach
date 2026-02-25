@@ -59,7 +59,11 @@ client.on(Events.ClientReady, async () => {
     });
 });
 
-client.on('debug', m => console.log(colors.gray + `[DEBUG] ${m}` + colors.reset));
+client.on('debug', m => console.log(`[DEBUG] ${m}` + colors.reset));
+
+client.on(Events.Error, error => {
+    console.error(colors.red + "The gateway encountered an error:" + colors.reset, error);
+});
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isModalSubmit()) {
