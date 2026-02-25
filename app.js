@@ -59,6 +59,8 @@ client.on(Events.ClientReady, async () => {
     });
 });
 
+client.on('debug', m => console.log(colors.gray + `[DEBUG] ${m}` + colors.reset));
+
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('modal_level_')) { // roles for leveling
