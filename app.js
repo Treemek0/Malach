@@ -43,7 +43,7 @@ for (const file of commandFiles) {
     }
 }
 
-client.on('clientReady', async () => {
+client.on(Events.ClientReady, async () => {
     console.log(colors.green + `Success! Logged in as ` + colors.yellow + `${client.user.tag}` + colors.reset);
 
     await client.application.commands.set(commandsData);
@@ -455,4 +455,7 @@ setInterval(async () => {
     }
 }, 30000);
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN).catch(error => {
+    console.error(colors.red + "Login failed!" + colors.reset);
+    console.error(error);
+});
