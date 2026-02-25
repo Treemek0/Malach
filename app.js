@@ -18,8 +18,11 @@ console.log(colors.yellow + "Trying to login as: " + colors.reset, process.env.A
 
 const express = require('express');
 const app = express();
+const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Malach is online!'));
-app.listen(3000, () => console.log(colors.green + "Web server started on port 3000!" + colors.reset));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(colors.green + `Web server started on port ${PORT}!` + colors.reset);
+});
 
 client.commands = new Collection();
 
@@ -58,8 +61,6 @@ client.on(Events.ClientReady, async () => {
         });
     });
 });
-
-client.on('debug', m => console.log(`[DEBUG] ${m}` + colors.reset));
 
 client.on(Events.Error, error => {
     console.error(colors.red + "The gateway encountered an error:" + colors.reset, error);
@@ -461,7 +462,4 @@ setInterval(async () => {
     }
 }, 30000);
 
-client.login(process.env.DISCORD_TOKEN).catch(error => {
-    console.error(colors.red + "Login failed!" + colors.reset);
-    console.error(error);
-});
+client.login(process.env.DISCORD_TOKEN);
