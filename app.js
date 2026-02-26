@@ -63,8 +63,25 @@ client.on(Events.ClientReady, async () => {
 });
 
 client.on(Events.Error, error => {
-    console.error(colors.red + "The gateway encountered an error:" + colors.reset, error);
+    console.error(colors.red + "Gateway Error:" + colors.reset, error);
 });
+
+client.on('shardDisconnect', (event, id) => {
+    console.error(colors.red + `Shard ${id} disconnected. Restarting...` + colors.reset);
+    process.exit(1); 
+});
+
+process.on('unhandledRejection', error => {
+    console.error('Unhandled promise rejection:', error);
+});
+
+setInterval(() => {
+    console.log(colors.gray + `[HEARTBEAT] Ping: ${client.ws.ping}ms` + colors.reset);
+    if (client.ws.ping > 5000) {
+        console.error(colors.red + "Ping too high, restarting process..." + colors.reset);
+        process.exit(1);
+    }
+}, 60000);
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isModalSubmit()) {
