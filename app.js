@@ -77,7 +77,7 @@ process.on('unhandledRejection', error => {
 
 setInterval(() => {
     console.log(colors.gray + `[HEARTBEAT] Ping: ${client.ws.ping}ms` + colors.reset);
-    if (client.ws.ping > 5000) {
+    if (isNaN(client.ws.ping) || client.ws.ping == null || client.ws.ping > 5000) {
         console.error(colors.red + "Ping too high, restarting process..." + colors.reset);
         process.exit(1);
     }
